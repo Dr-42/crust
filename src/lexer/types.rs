@@ -1,7 +1,9 @@
+#[derive(Debug, Clone)]
 pub enum KeywordType {
     Fn,
     Const,
     Struct,
+    Enum,
     Union,
     Break,
     Continue,
@@ -11,11 +13,10 @@ pub enum KeywordType {
     Do,
     While,
     For,
-    Return,
+    Ret,
     Switch,
     Case,
     Default,
-    Enum,
     As,
     Is,
     Static,
@@ -23,8 +24,10 @@ pub enum KeywordType {
     True,
     False,
     Null,
+    Ptr,
 }
 
+#[derive(Debug, Clone)]
 pub enum DataType {
     I8,
     I16,
@@ -40,9 +43,9 @@ pub enum DataType {
     Chr,
     Bln,
     Void,
-    Ptr(Box<DataType>),
 }
 
+#[derive(Debug, Clone)]
 pub enum OperatorType {
     Add,
     Sub,
@@ -80,10 +83,12 @@ pub enum OperatorType {
     ShiftLeftAssign,
     ShiftRightAssign,
     Ternary,
-    Comma,
+    Increment,
+    Decrement,
 }
 
-pub enum PreprocessorDirectiveType {
+#[derive(Debug, Clone)]
+pub enum PreprocessorType {
     Include,
     Define,
     If,
@@ -93,42 +98,44 @@ pub enum PreprocessorDirectiveType {
     Undef,
     Error,
     Pragma,
-    Null,
 }
 
+#[derive(Debug, Clone)]
 pub enum CommentType {
     SingleLine,
     MultiLine,
     Doc,
 }
 
+#[derive(Debug, Clone)]
 pub enum PunctuatorType {
-    LeftParenthesis,
-    RightParenthesis,
+    LeftParen,
+    RightParen,
     LeftBrace,
     RightBrace,
     LeftBracket,
     RightBracket,
-    LeftAngleBracket,
-    RightAngleBracket,
+    LeftAngle,
+    RightAngle,
     Semicolon,
     Colon,
     Dot,
 }
 
+#[derive(Debug)]
 pub enum TokenType {
     Keyword(KeywordType),
     DataType(DataType),
-    Identifier,
-    IntNum,
-    FloatNum,
+    Identifier(String),
+    IntNum(String),
+    FloatNum(String),
     Operator {
         operator_type: OperatorType,
         is_unary: bool,
     },
     Punctuator(PunctuatorType),
-    StringLiteral,
-    CharLiteral,
-    Preprocessor(PreprocessorDirectiveType),
+    StringLiteral(String),
+    CharLiteral(String),
+    Preprocessor(PreprocessorType),
     Comment(CommentType),
 }
