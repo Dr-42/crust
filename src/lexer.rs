@@ -209,10 +209,7 @@ impl Lexer {
 
                     if let Some(op) = lexer_map.operators.get(operator.as_str()) {
                         self.tokens.push(Token {
-                            token_type: TokenType::Operator {
-                                operator_type: op.clone(),
-                                is_unary: false,
-                            },
+                            token_type: TokenType::Operator(op.clone()),
                             line: self.line as u32,
                             column: self.column as u32,
                         });
@@ -226,49 +223,19 @@ impl Lexer {
                 // Comments
                 '@' => {
                     let mut comment = String::new();
-                    let mut token_type = None;
                     while let Some(&ch) = chars.peek() {
-                        if ch == '*' {
-                            comment.push(chars.next().unwrap());
-                            if let Some(&ch) = chars.peek() {
-                                if ch == '@' && {
-                                    chars.next();
-                                    chars.next().unwrap() == '*'
-                                } {
-                                    token_type =
-                                        Some(TokenType::Comment(types::CommentType::MultiLine));
-                                    break;
-                                }
-                            }
-                        } else if ch == '!' {
-                            comment.push(chars.next().unwrap());
-                            if let Some(&ch) = chars.peek() {
-                                if ch == '\n' {
-                                    token_type = Some(TokenType::Comment(types::CommentType::Doc));
-                                    break;
-                                }
-                            }
+                        if ch == '\n' {
+                            break;
                         } else {
                             comment.push(chars.next().unwrap());
-                            if ch == '\n' {
-                                token_type =
-                                    Some(TokenType::Comment(types::CommentType::SingleLine));
-                                break;
-                            }
                         }
                     }
-                    if token_type.is_none() {
-                        return Err(Box::new(io::Error::new(
-                            io::ErrorKind::InvalidData,
-                            "Invalid comment",
-                        )));
-                    } else {
-                        self.tokens.push(Token {
-                            token_type: token_type.unwrap(),
-                            line: self.line as u32,
-                            column: self.column as u32,
-                        })
-                    }
+
+                    self.tokens.push(Token {
+                        token_type: TokenType::Comment(comment),
+                        line: self.line as u32,
+                        column: self.column as u32,
+                    });
                 }
                 _ => (),
             }

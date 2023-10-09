@@ -1,6 +1,6 @@
 #[derive(Debug, Clone)]
 pub enum KeywordType {
-    Fn,
+    Fnc,
     Const,
     Struct,
     Enum,
@@ -92,13 +92,6 @@ pub enum PreprocessorType {
 }
 
 #[derive(Debug, Clone)]
-pub enum CommentType {
-    SingleLine,
-    MultiLine,
-    Doc,
-}
-
-#[derive(Debug, Clone)]
 pub enum PunctuatorType {
     LeftParen,
     RightParen,
@@ -119,13 +112,10 @@ pub enum TokenType {
     Identifier(String),
     IntNum(String),
     FloatNum(String),
-    Operator {
-        operator_type: OperatorType,
-        is_unary: bool,
-    },
+    Operator(OperatorType),
     Punctuator(PunctuatorType),
     StringLiteral(String),
     CharLiteral(String),
     Preprocessor(PreprocessorType),
-    Comment(CommentType),
+    Comment(String),
 }

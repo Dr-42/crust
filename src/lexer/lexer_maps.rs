@@ -7,14 +7,13 @@ pub struct LexerMaps {
     pub punctuators: HashMap<char, types::PunctuatorType>,
     pub operators: HashMap<&'static str, types::OperatorType>,
     pub preprocessor_directives: HashMap<&'static str, types::PreprocessorType>,
-    pub comments: HashMap<&'static str, types::CommentType>,
 }
 
 impl LexerMaps {
     pub fn default() -> Self {
         let keywords: HashMap<&str, types::KeywordType> = {
             let mut map = HashMap::new();
-            map.insert("fn", types::KeywordType::Fn);
+            map.insert("fnc", types::KeywordType::Fnc);
             map.insert("const", types::KeywordType::Const);
             map.insert("struct", types::KeywordType::Struct);
             map.insert("enum", types::KeywordType::Enum);
@@ -124,21 +123,12 @@ impl LexerMaps {
             map
         };
 
-        let comments = {
-            let mut map = HashMap::new();
-            map.insert("@", types::CommentType::SingleLine);
-            map.insert("@*", types::CommentType::MultiLine);
-            map.insert("@!", types::CommentType::Doc);
-            map
-        };
-
         Self {
             keywords,
             datatypes,
             punctuators,
             operators,
             preprocessor_directives,
-            comments,
         }
     }
 }
