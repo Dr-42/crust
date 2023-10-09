@@ -126,9 +126,9 @@ impl LexerMaps {
 
         let comments = {
             let mut map = HashMap::new();
-            map.insert("//", types::CommentType::SingleLine);
-            map.insert("/*", types::CommentType::MultiLine);
-            map.insert("//!", types::CommentType::Doc);
+            map.insert("@", types::CommentType::SingleLine);
+            map.insert("@*", types::CommentType::MultiLine);
+            map.insert("@!", types::CommentType::Doc);
             map
         };
 
