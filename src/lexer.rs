@@ -178,7 +178,15 @@ impl Lexer {
                     });
                 }
 
-                // Operators, Comments, Punctuators
+                // Punctuators
+                '(' | ')' | '{' | '}' | '[' | ']' | ';' | ':' | '.' | '`' => {
+                    let punctuator = lexer_map.punctuators.get(&ch).unwrap();
+                    self.tokens.push(Token {
+                        token_type: TokenType::Punctuator(punctuator.clone()),
+                        line: self.line as u32,
+                        column: self.column as u32,
+                    });
+                }
                 _ => (),
             }
         }

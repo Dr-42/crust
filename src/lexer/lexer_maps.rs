@@ -4,7 +4,7 @@ use std::collections::HashMap;
 pub struct LexerMaps {
     pub keywords: HashMap<&'static str, types::KeywordType>,
     pub datatypes: HashMap<&'static str, types::DataType>,
-    pub puctuators: HashMap<char, types::PunctuatorType>,
+    pub punctuators: HashMap<char, types::PunctuatorType>,
     pub operators: HashMap<&'static str, types::OperatorType>,
     pub preprocessor_directives: HashMap<&'static str, types::PreprocessorType>,
     pub comments: HashMap<&'static str, types::CommentType>,
@@ -61,7 +61,7 @@ impl LexerMaps {
             map
         };
 
-        let puctuators = {
+        let punctuators = {
             let mut map = HashMap::new();
             map.insert('(', types::PunctuatorType::LeftParen);
             map.insert(')', types::PunctuatorType::RightParen);
@@ -69,8 +69,7 @@ impl LexerMaps {
             map.insert('}', types::PunctuatorType::RightBrace);
             map.insert('[', types::PunctuatorType::LeftBracket);
             map.insert(']', types::PunctuatorType::RightBracket);
-            map.insert('<', types::PunctuatorType::LeftAngle);
-            map.insert('>', types::PunctuatorType::RightAngle);
+            map.insert('`', types::PunctuatorType::Tick);
             map.insert(';', types::PunctuatorType::Semicolon);
             map.insert(':', types::PunctuatorType::Colon);
             map.insert('.', types::PunctuatorType::Dot);
@@ -97,13 +96,6 @@ impl LexerMaps {
             map.insert("*=", types::OperatorType::MulAssign);
             map.insert("/=", types::OperatorType::DivAssign);
             map.insert("%=", types::OperatorType::ModAssign);
-            map.insert("&=", types::OperatorType::BitwiseAndAssign);
-            map.insert("|=", types::OperatorType::BitwiseOrAssign);
-            map.insert("^=", types::OperatorType::BitwiseXorAssign);
-            map.insert("~=", types::OperatorType::BitwiseNotAssign);
-            map.insert("&&=", types::OperatorType::LogicalAndAssign);
-            map.insert("||=", types::OperatorType::LogicalOrAssign);
-            map.insert("!=", types::OperatorType::LogicalNotAssign);
             map.insert("==", types::OperatorType::Equal);
             map.insert("!=", types::OperatorType::NotEqual);
             map.insert(">", types::OperatorType::GreaterThan);
@@ -112,8 +104,6 @@ impl LexerMaps {
             map.insert("<=", types::OperatorType::LessThanOrEqual);
             map.insert("<<", types::OperatorType::ShiftLeft);
             map.insert(">>", types::OperatorType::ShiftRight);
-            map.insert("<<=", types::OperatorType::ShiftLeftAssign);
-            map.insert(">>=", types::OperatorType::ShiftRightAssign);
             map.insert("?", types::OperatorType::Ternary);
             map.insert("++", types::OperatorType::Increment);
             map.insert("--", types::OperatorType::Decrement);
@@ -145,7 +135,7 @@ impl LexerMaps {
         Self {
             keywords,
             datatypes,
-            puctuators,
+            punctuators,
             operators,
             preprocessor_directives,
             comments,
