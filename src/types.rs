@@ -104,18 +104,3 @@ pub enum PunctuatorType {
     Colon,
     Dot,
 }
-
-#[derive(Debug)]
-pub enum TokenType {
-    Keyword(KeywordType),
-    DataType(DataType),
-    Identifier(String),
-    IntNum(String),
-    FloatNum(String),
-    Operator(OperatorType),
-    Punctuator(PunctuatorType),
-    StringLiteral(String),
-    CharLiteral(String),
-    Preprocessor(PreprocessorType),
-    Comment(String),
-}

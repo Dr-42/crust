@@ -1,0 +1,48 @@
+use crate::types::PreprocessorType;
+
+pub enum LiteralType {
+    Integer,
+    Float,
+    String,
+    Boolean,
+    Array,
+    Null,
+}
+
+#[derive(Debug)]
+pub enum NodeType {
+    Program,
+    VariableDeclaration,
+    ArrayDeclaration,
+    PointerDeclaration,
+    PointerDeref,
+    FunctionDeclaration,
+    FunctionArgument,
+    VariableAssignment,
+    ArrayAssignment,
+    ArrayElementAssignment,
+    ArrayExpression,
+    ArrayElement,
+    Identifier,
+    Type,
+    Scope,
+    ReturnStatement,
+    BinaryOperator,
+    UnaryOperator,
+    Expression,
+    IfStatement,
+    ElifStatement,
+    ElseStatement,
+    WhileStatement,
+    DoStatement,
+    ForStatement,
+    BreakStatement,
+    ContinueStatement,
+    FunctionCall,
+    IntLiteral,
+    FloatLiteral,
+    StringLiteral,
+    BooleanLiteral,
+    NullLiteral,
+    PreprocessorStatement(PreprocessorType),
+}

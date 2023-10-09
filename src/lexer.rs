@@ -1,11 +1,11 @@
 pub mod lexer_maps;
-pub mod types;
+pub mod token_types;
 use lexer_maps::LexerMaps;
-use types::TokenType;
+use token_types::TokenType;
 
 use std::{error::Error, io};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub line: u32,
@@ -29,6 +29,13 @@ impl Lexer {
             index: 0,
             tokens: Vec::new(),
         }
+    }
+
+    pub fn trim_comments(&mut self) {
+        self.tokens.retain(|token| match token.token_type {
+            TokenType::Comment(_) => false,
+            _ => true,
+        });
     }
 
     pub fn tokenize(&mut self) -> Result<(), Box<dyn Error>> {
@@ -58,11 +65,23 @@ impl Lexer {
                         }
                     }
 
+                    let mut data = String::new();
+                    while let Some(&ch) = chars.peek() {
+                        if ch == '\n' {
+                            break;
+                        } else {
+                            data.push(chars.next().unwrap());
+                        }
+                    }
+
                     if let Some(preprocess) =
                         lexer_map.preprocessor_directives.get(preprocessor.as_str())
                     {
                         self.tokens.push(Token {
-                            token_type: TokenType::Preprocessor(preprocess.clone()),
+                            token_type: TokenType::Preprocessor {
+                                typ: preprocess.clone(),
+                                data,
+                            },
                             line: self.line as u32,
                             column: self.column as u32,
                         });
@@ -242,5 +261,18 @@ impl Lexer {
         }
 
         Ok(())
+    }
+}
+
+impl Iterator for Lexer {
+    type Item = Token;
+    fn next(&mut self) -> Option<Token> {
+        if self.index < self.tokens.len() {
+            let token = self.tokens[self.index].clone();
+            self.index += 1;
+            Some(token)
+        } else {
+            None
+        }
     }
 }
