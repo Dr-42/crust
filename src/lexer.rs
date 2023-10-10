@@ -334,9 +334,9 @@ impl Lexer {
                         column: self.column as u64,
                     });
                     if self.fnc_encountered {
-                        if punctuator == &PunctuatorType::LeftParen {
+                        if punctuator == &PunctuatorType::LeftBrace {
                             self.fnc_paren_level += 1;
-                        } else if punctuator == &PunctuatorType::RightParen {
+                        } else if punctuator == &PunctuatorType::RightBrace {
                             self.fnc_paren_level -= 1;
                             if self.fnc_paren_level == 0 {
                                 self.lexer_data.clear_generic_data_types();
