@@ -12,6 +12,7 @@ use crate::{
 
 pub struct Ast {
     pub root_node: Option<Node>,
+    pub filename: String,
     lexer: Peekable<lexer::Lexer>,
     in_function: bool,
 }
@@ -22,6 +23,7 @@ impl Ast {
         lexer.trim_comments();
         Ok(Self {
             root_node: None,
+            filename: lexer.filename.clone(),
             lexer: lexer.peekable(),
             in_function: false,
         })

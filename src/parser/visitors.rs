@@ -13,14 +13,14 @@ use crate::{
 use std::error::Error;
 
 macro_rules! err {
-    ($msg:expr) => {
+    ($self:expr, $msg:expr) => {
         return Err($msg.into())
     };
-    ($msg:expr, $token:expr) => {
+    ($self:expr, $msg:expr, $token:expr) => {
         return Err(($msg.to_string()
             + &format!(
-                "got token of type {:?} at line {}, column {}",
-                $token.token_type, $token.line, $token.column
+                "got token of type {} at {}:{}:{}",
+                $token.token_type, $self.filename, $token.line, $token.column
             ))
             .into())
     };
@@ -30,7 +30,7 @@ impl Ast {
     pub fn visit_function_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
         if let Some(token) = self.lexer.next() {
             if token.token_type != TokenType::Keyword(KeywordType::Fnc) {
-                err!("Expected keyword 'fnc' ", token)
+                err!(self, "Expected keyword 'fnc' ", token)
             }
             let mut function_node = Node::new(
                 NodeType::FunctionDeclaration,
@@ -48,27 +48,27 @@ impl Ast {
                             Some(NodeData::Identifier(name)),
                         ));
                     }
-                    _ => err!("Expected identifier ", token),
+                    _ => err!(self, "Expected identifier ", token),
                 }
             } else {
-                err!("Unexpected EOF")
+                err!(self, "Unexpected EOF")
             }
             if let Some(token) = self.lexer.peek() {
                 if token.token_type != TokenType::Punctuator(PunctuatorType::LeftParen) {
-                    err!("Expected '(' ", token)
+                    err!(self, "Expected '(' ", token)
                 } else {
                     let args_node = self.visit_fn_decl_arg()?;
                     function_node.add_child(args_node);
                 }
             } else {
-                err!("Unexpected EOF")
+                err!(self, "Unexpected EOF")
             }
             if let Some(token) = self.lexer.peek() {
                 match token.token_type {
                     TokenType::Punctuator(PunctuatorType::Colon) => {
                         self.lexer.next();
                     }
-                    _ => err!("Expected ':' ", token),
+                    _ => err!(self, "Expected ':' ", token),
                 }
             }
 
@@ -82,10 +82,10 @@ impl Ast {
                             Some(NodeData::Type(data_type)),
                         ));
                     }
-                    _ => err!("Expected data type ", token),
+                    _ => err!(self, "Expected data type ", token),
                 }
             } else {
-                err!("Unexpected EOF")
+                err!(self, "Unexpected EOF")
             }
 
             if let Some(token) = self.lexer.peek() {
@@ -97,14 +97,14 @@ impl Ast {
                         let scope_node = self.visit_scope()?;
                         function_node.add_child(scope_node);
                     }
-                    _ => err!("Expected ';' or '{{' ", token),
+                    _ => err!(self, "Expected ';' or '{' ", token),
                 }
             } else {
-                err!("Unexpected EOF")
+                err!(self, "Unexpected EOF")
             }
             Ok(function_node)
         } else {
-            err!("Unexpected EOF")
+            err!(self, "Unexpected EOF")
         }
     }
 
@@ -112,7 +112,7 @@ impl Ast {
         if let Some(token) = self.lexer.next() {
             match token.token_type {
                 TokenType::Punctuator(PunctuatorType::LeftParen) => {}
-                _ => err!("Expected '(' ", token),
+                _ => err!(self, "Expected '(' ", token),
             }
         }
         let mut args_node = Node::new(NodeType::FunctionDeclarationArguments, 0, 0, None);
@@ -139,10 +139,10 @@ impl Ast {
                                     Some(NodeData::Identifier(name)),
                                 ));
                             }
-                            _ => err!("Expected identifier ", name_token),
+                            _ => err!(self, "Expected identifier ", name_token),
                         }
                     } else {
-                        err!("Unexpected EOF")
+                        err!(self, "Unexpected EOF")
                     }
 
                     if let Some(token) = self.lexer.peek() {
@@ -150,10 +150,10 @@ impl Ast {
                             TokenType::Punctuator(PunctuatorType::Colon) => {
                                 self.lexer.next();
                             }
-                            _ => err!("Expected ':' ", token),
+                            _ => err!(self, "Expected ':' ", token),
                         }
                     } else {
-                        err!("Unexpected EOF")
+                        err!(self, "Unexpected EOF")
                     }
 
                     if let Some(type_token) = self.lexer.next() {
@@ -166,10 +166,10 @@ impl Ast {
                                     Some(NodeData::Type(data_type)),
                                 ));
                             }
-                            _ => err!("Expected data type ", type_token),
+                            _ => err!(self, "Expected data type ", type_token),
                         }
                     } else {
-                        err!("Unexpected EOF")
+                        err!(self, "Unexpected EOF")
                     }
 
                     if let Some(token) = self.lexer.peek() {
@@ -178,13 +178,13 @@ impl Ast {
                                 self.lexer.next();
                             }
                             TokenType::Punctuator(PunctuatorType::RightParen) => {}
-                            _ => err!("Expected ',' or ')' ", token),
+                            _ => err!(self, "Expected ',' or ')' ", token),
                         }
                     } else {
-                        err!("Unexpected EOF")
+                        err!(self, "Unexpected EOF")
                     }
                 }
-                _ => err!("Expected identifier ", token),
+                _ => err!(self, "Expected identifier ", token),
             }
             args_node.add_child(arg_node);
         }

@@ -119,7 +119,6 @@ impl LexerMaps {
             map.insert("#else", PreprocessorType::Else);
             map.insert("#endif", PreprocessorType::Endif);
             map.insert("#undef", PreprocessorType::Undef);
-            map.insert("#error", PreprocessorType::Error);
             map.insert("#pragma", PreprocessorType::Pragma);
             map
         };

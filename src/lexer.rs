@@ -77,6 +77,7 @@ impl Lexer {
                     if let Some(preprocess) =
                         lexer_map.preprocessor_directives.get(preprocessor.as_str())
                     {
+                        let token_length = preprocessor.len() + data.len() + 1;
                         self.tokens.push(Token {
                             token_type: TokenType::Preprocessor {
                                 typ: preprocess.clone(),
@@ -85,6 +86,7 @@ impl Lexer {
                             line: self.line as u64,
                             column: self.column as u64,
                         });
+                        self.column += token_length;
                     }
                 }
 
@@ -100,6 +102,7 @@ impl Lexer {
                         }
                     }
 
+                    let token_length = identifier.len();
                     if let Some(keyword) = lexer_map.keywords.get(identifier.as_str()) {
                         self.tokens.push(Token {
                             token_type: TokenType::Keyword(keyword.clone()),
@@ -119,6 +122,7 @@ impl Lexer {
                             column: self.column as u64,
                         });
                     }
+                    self.column += token_length;
                 }
 
                 // Integer & float
@@ -144,6 +148,7 @@ impl Lexer {
                         }
                     }
 
+                    let token_length = number.len();
                     if encountered_dot {
                         self.tokens.push(Token {
                             token_type: TokenType::FloatNum(number),
@@ -157,6 +162,7 @@ impl Lexer {
                             column: self.column as u64,
                         });
                     }
+                    self.column += token_length;
                 }
 
                 // String literal
@@ -171,11 +177,13 @@ impl Lexer {
                         }
                     }
 
+                    let token_length = string.len() + 2;
                     self.tokens.push(Token {
                         token_type: TokenType::StringLiteral(string),
                         line: self.line as u64,
                         column: self.column as u64,
                     });
+                    self.column += token_length;
                 }
 
                 // Char literal
@@ -190,21 +198,25 @@ impl Lexer {
                         }
                     }
 
+                    let token_length = string.len() + 2;
                     self.tokens.push(Token {
                         token_type: TokenType::CharLiteral(string),
                         line: self.line as u64,
                         column: self.column as u64,
                     });
+                    self.column += token_length;
                 }
 
                 // Punctuators
                 '(' | ')' | '{' | '}' | '[' | ']' | ';' | ':' | ',' | '.' | '`' => {
                     let punctuator = lexer_map.punctuators.get(&ch).unwrap();
+                    let token_length = 1;
                     self.tokens.push(Token {
                         token_type: TokenType::Punctuator(punctuator.clone()),
                         line: self.line as u64,
                         column: self.column as u64,
                     });
+                    self.column += token_length;
                 }
 
                 // Operators
@@ -226,6 +238,7 @@ impl Lexer {
                         }
                     }
 
+                    let token_length = operator.len();
                     if let Some(op) = lexer_map.operators.get(operator.as_str()) {
                         self.tokens.push(Token {
                             token_type: TokenType::Operator(op.clone()),
@@ -238,6 +251,7 @@ impl Lexer {
                             "Invalid operator",
                         )));
                     }
+                    self.column += token_length;
                 }
                 // Comments
                 '@' => {
@@ -250,13 +264,17 @@ impl Lexer {
                         }
                     }
 
+                    let token_length = comment.len();
                     self.tokens.push(Token {
                         token_type: TokenType::Comment(comment),
                         line: self.line as u64,
                         column: self.column as u64,
                     });
+                    self.column += token_length;
                 }
-                _ => (),
+                _ => {
+                    self.column += 1;
+                }
             }
         }
 
