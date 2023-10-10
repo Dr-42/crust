@@ -1,4 +1,4 @@
-fnc mul`T, U`(a: T, b: U) : ptr`T`;
+fnc mul`S, U`(a: S, b: U) : ptr`T`;
 
 fnc add`T`(a: T, b: T) : T {
     {
@@ -9,5 +9,6 @@ fnc add`T`(a: T, b: T) : T {
 }
 
 fnc sub`U`(a: U, b: U) : U {
+    hho: U = 4;
     ret a - b;
 }

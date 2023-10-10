@@ -4,7 +4,7 @@ pub mod token_types;
 use lexer_maps::LexerMaps;
 pub use token_types::{OperatorType, PreprocessorType, PunctuatorType, TokenType};
 
-use std::{char, error::Error, io};
+use std::{error::Error, io};
 
 use self::token_types::KeywordType;
 
@@ -146,8 +146,10 @@ impl Lexer {
                                 });
                                 while let Some(char) = chars.next() {
                                     if char == '`' {
+                                        self.column += 1;
                                         break;
                                     } else if char == ' ' {
+                                        self.column += 1;
                                         continue;
                                     } else if char == '\n' {
                                         self.line += 1;
@@ -160,7 +162,8 @@ impl Lexer {
                                             line: self.line as u64,
                                             column: self.column as u64,
                                         });
-                                    } else {
+                                        self.column += 1;
+                                    } else if char.is_alphabetic() {
                                         let mut identifier = String::new();
                                         identifier.push(char);
                                         while let Some(&ch) = chars.peek() {
@@ -170,6 +173,7 @@ impl Lexer {
                                                 break;
                                             }
                                         }
+                                        let iden_len = identifier.len();
                                         self.lexer_data
                                             .add_generic_data_type(identifier.to_string());
                                         self.tokens.push(Token {
@@ -179,20 +183,18 @@ impl Lexer {
                                             line: self.line as u64,
                                             column: self.column as u64,
                                         });
+                                        self.column += iden_len;
+                                    } else {
+                                        return Err(Box::new(io::Error::new(
+                                            io::ErrorKind::InvalidData,
+                                            format!(
+                                                "Invalid generic data type in {}:{}:{}",
+                                                self.filename, self.line, self.column
+                                            ),
+                                        )));
                                     }
                                 }
                                 continue;
-                                /*
-                                self.lexer_data
-                                    .add_generic_data_type(identifier.to_string());
-                                self.tokens.push(Token {
-                                    token_type: TokenType::DataType(
-                                        token_types::DataType::Generic(identifier),
-                                    ),
-                                    line: self.line as u64,
-                                    column: self.column as u64,
-                                });
-                                */
                             }
                             TokenType::Keyword(
                                 KeywordType::Struct | KeywordType::Union | KeywordType::Enum,
@@ -331,6 +333,22 @@ impl Lexer {
                         line: self.line as u64,
                         column: self.column as u64,
                     });
+                    if self.fnc_encountered {
+                        if punctuator == &PunctuatorType::LeftParen {
+                            self.fnc_paren_level += 1;
+                        } else if punctuator == &PunctuatorType::RightParen {
+                            self.fnc_paren_level -= 1;
+                            if self.fnc_paren_level == 0 {
+                                self.lexer_data.clear_generic_data_types();
+                                self.fnc_encountered = false;
+                            }
+                        }
+                        if (punctuator == &PunctuatorType::Semicolon) && (self.fnc_paren_level == 0)
+                        {
+                            self.lexer_data.clear_generic_data_types();
+                            self.fnc_encountered = false;
+                        }
+                    }
                     self.column += token_length;
                 }
 
