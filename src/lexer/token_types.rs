@@ -1,6 +1,6 @@
-use crate::types::*;
+pub use crate::types::{DataType, KeywordType, OperatorType, PreprocessorType, PunctuatorType};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     Keyword(KeywordType),
     DataType(DataType),

@@ -1,18 +1,19 @@
 pub mod node;
 pub mod node_types;
+mod visitors;
 
-use node::{Node, NodeType};
+use node::Node;
 use std::{error::Error, iter::Peekable};
 
 use crate::{
     lexer::{self, token_types::TokenType},
-    node,
     types::KeywordType,
 };
 
 pub struct Ast {
     pub root_node: Option<Node>,
     lexer: Peekable<lexer::Lexer>,
+    in_function: bool,
 }
 
 impl Ast {
@@ -22,6 +23,7 @@ impl Ast {
         Ok(Self {
             root_node: None,
             lexer: lexer.peekable(),
+            in_function: false,
         })
     }
 
@@ -31,7 +33,7 @@ impl Ast {
     }
 
     fn visit_program(&mut self) -> Result<Node, Box<dyn Error>> {
-        let mut program_node = node!(NodeType::Program);
+        let mut program_node = Node::new(node_types::NodeType::Program, 0, 0, None);
         while let Some(_) = self.lexer.peek() {
             program_node.add_child(self.visit_statement()?);
         }
@@ -39,8 +41,8 @@ impl Ast {
     }
 
     fn visit_statement(&mut self) -> Result<Node, Box<dyn Error>> {
-        if let Some(token) = self.lexer.next() {
-            match token.token_type {
+        if let Some(token) = self.lexer.peek() {
+            match &token.token_type {
                 TokenType::Keyword(keyword_type) => match keyword_type {
                     KeywordType::Fnc => self.visit_function_declaration(),
                     KeywordType::Const => self.visit_constant_declaration(),
@@ -51,43 +53,12 @@ impl Ast {
                     KeywordType::Extern => self.visit_extern_declaration(),
                     _ => Err("Unexpected toplevel keyword".into()),
                 },
-                TokenType::Preprocessor { typ, data } => Ok(Node {
-                    node_type: NodeType::PreprocessorStatement(typ),
-                    data,
-                    line: token.line,
-                    column: token.column,
-                    children: Vec::new(),
-                }),
-                TokenType::Identifier(name) => self.visit_identifier(name),
+                TokenType::Preprocessor { .. } => self.visit_preprocessor_statement(),
+                TokenType::Identifier(_) => self.visit_identifier(),
                 _ => Err("Unexpected toplevel token".into()),
             }
         } else {
             Err("Unexpected end of file".into())
         }
-    }
-
-    fn visit_function_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_constant_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_struct_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_enum_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_union_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_static_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_extern_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
-    }
-    fn visit_identifier(&mut self, _name: String) -> Result<Node, Box<dyn Error>> {
-        todo!()
     }
 }

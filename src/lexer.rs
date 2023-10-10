@@ -1,15 +1,15 @@
 pub mod lexer_maps;
 pub mod token_types;
 use lexer_maps::LexerMaps;
-use token_types::TokenType;
+pub use token_types::{OperatorType, PreprocessorType, PunctuatorType, TokenType};
 
 use std::{error::Error, io};
 
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
-    pub line: u32,
-    pub column: u32,
+    pub line: u64,
+    pub column: u64,
 }
 
 pub struct Lexer {
@@ -82,8 +82,8 @@ impl Lexer {
                                 typ: preprocess.clone(),
                                 data,
                             },
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     }
                 }
@@ -103,20 +103,20 @@ impl Lexer {
                     if let Some(keyword) = lexer_map.keywords.get(identifier.as_str()) {
                         self.tokens.push(Token {
                             token_type: TokenType::Keyword(keyword.clone()),
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     } else if let Some(data_type) = lexer_map.datatypes.get(identifier.as_str()) {
                         self.tokens.push(Token {
                             token_type: TokenType::DataType(data_type.clone()),
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     } else {
                         self.tokens.push(Token {
                             token_type: TokenType::Identifier(identifier),
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     }
                 }
@@ -147,14 +147,14 @@ impl Lexer {
                     if encountered_dot {
                         self.tokens.push(Token {
                             token_type: TokenType::FloatNum(number),
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     } else {
                         self.tokens.push(Token {
                             token_type: TokenType::IntNum(number),
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     }
                 }
@@ -173,8 +173,8 @@ impl Lexer {
 
                     self.tokens.push(Token {
                         token_type: TokenType::StringLiteral(string),
-                        line: self.line as u32,
-                        column: self.column as u32,
+                        line: self.line as u64,
+                        column: self.column as u64,
                     });
                 }
 
@@ -192,18 +192,18 @@ impl Lexer {
 
                     self.tokens.push(Token {
                         token_type: TokenType::CharLiteral(string),
-                        line: self.line as u32,
-                        column: self.column as u32,
+                        line: self.line as u64,
+                        column: self.column as u64,
                     });
                 }
 
                 // Punctuators
-                '(' | ')' | '{' | '}' | '[' | ']' | ';' | ':' | '.' | '`' => {
+                '(' | ')' | '{' | '}' | '[' | ']' | ';' | ':' | ',' | '.' | '`' => {
                     let punctuator = lexer_map.punctuators.get(&ch).unwrap();
                     self.tokens.push(Token {
                         token_type: TokenType::Punctuator(punctuator.clone()),
-                        line: self.line as u32,
-                        column: self.column as u32,
+                        line: self.line as u64,
+                        column: self.column as u64,
                     });
                 }
 
@@ -229,8 +229,8 @@ impl Lexer {
                     if let Some(op) = lexer_map.operators.get(operator.as_str()) {
                         self.tokens.push(Token {
                             token_type: TokenType::Operator(op.clone()),
-                            line: self.line as u32,
-                            column: self.column as u32,
+                            line: self.line as u64,
+                            column: self.column as u64,
                         });
                     } else {
                         return Err(Box::new(io::Error::new(
@@ -252,8 +252,8 @@ impl Lexer {
 
                     self.tokens.push(Token {
                         token_type: TokenType::Comment(comment),
-                        line: self.line as u32,
-                        column: self.column as u32,
+                        line: self.line as u64,
+                        column: self.column as u64,
                     });
                 }
                 _ => (),

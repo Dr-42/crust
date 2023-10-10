@@ -71,6 +71,7 @@ impl LexerMaps {
             map.insert('`', PunctuatorType::Tick);
             map.insert(';', PunctuatorType::Semicolon);
             map.insert(':', PunctuatorType::Colon);
+            map.insert(',', PunctuatorType::Comma);
             map.insert('.', PunctuatorType::Dot);
             map
         };

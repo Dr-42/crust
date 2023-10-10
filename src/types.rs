@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum KeywordType {
     Fnc,
     Const,
@@ -27,7 +27,7 @@ pub enum KeywordType {
     Ptr,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum DataType {
     I8,
     I16,
@@ -45,7 +45,7 @@ pub enum DataType {
     Void,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum OperatorType {
     Add,
     Sub,
@@ -78,7 +78,7 @@ pub enum OperatorType {
     Decrement,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PreprocessorType {
     Include,
     Define,
@@ -91,7 +91,7 @@ pub enum PreprocessorType {
     Pragma,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PunctuatorType {
     LeftParen,
     RightParen,
@@ -102,5 +102,6 @@ pub enum PunctuatorType {
     Tick,
     Semicolon,
     Colon,
+    Comma,
     Dot,
 }

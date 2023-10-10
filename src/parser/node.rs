@@ -1,23 +1,33 @@
-use crate::lexer::Token;
+use crate::lexer::{token_types::DataType, OperatorType, PunctuatorType};
 
 pub use super::node_types::NodeType;
 
 #[derive(Debug)]
+pub enum NodeData {
+    Identifier(String),
+    Type(DataType),
+    Literal(String),
+    Operator(OperatorType),
+    Punctuator(PunctuatorType),
+    Preprocessor(String),
+}
+
+#[derive(Debug)]
 pub struct Node {
     pub node_type: NodeType,
-    pub data: String,
-    pub line: u32,
-    pub column: u32,
+    pub data: Option<NodeData>,
+    pub line: u64,
+    pub column: u64,
     pub children: Vec<Node>,
 }
 
 impl Node {
-    pub fn new(node_type: NodeType, token: &Token, data: &String) -> Self {
+    pub fn new(node_type: NodeType, line: u64, column: u64, data: Option<NodeData>) -> Self {
         Self {
             node_type,
-            line: token.line,
-            column: token.column,
-            data: data.clone(),
+            line,
+            column,
+            data,
             children: Vec::new(),
         }
     }
@@ -25,23 +35,4 @@ impl Node {
     pub fn add_child(&mut self, node: Node) {
         self.children.push(node);
     }
-}
-
-#[macro_export]
-macro_rules! node {
-    ($node_type:expr, $token:expr, $data:expr) => {
-        Node::new($node_type, $token, $data)
-    };
-    ($node_type:expr, $token:expr) => {
-        Node::new($node_type, $token, String::new())
-    };
-    ($node_type:expr) => {
-        Node {
-            node_type: $node_type,
-            data: String::new(),
-            line: 0,
-            column: 0,
-            children: Vec::new(),
-        }
-    };
 }
