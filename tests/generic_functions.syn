@@ -1,0 +1,13 @@
+fnc mul`T, U`(a: T, b: U) : ptr`T`;
+
+fnc add`T`(a: T, b: T) : T {
+    {
+        a = a + 1;
+        b = 9;
+    }
+    ret a + b;
+}
+
+fnc sub`U`(a: U, b: U) : U {
+    ret a - b;
+}

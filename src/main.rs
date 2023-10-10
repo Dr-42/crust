@@ -9,10 +9,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let src_name = &args[1];
 
-    let lexer = lexer::Lexer::new(src_name.to_string());
-    //println!("{:#?}", lexer.tokens);
+    let mut lexer = lexer::Lexer::new(src_name.to_string());
+    lexer.tokenize()?;
+    println!("{:#?}", lexer.tokens);
+    /*
     let mut ast = crust::parser::Ast::new(lexer)?;
     ast.parse()?;
     println!("{:#?}", ast.root_node);
+    */
     Ok(())
 }

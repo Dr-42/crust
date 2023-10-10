@@ -1,9 +1,12 @@
+pub mod lexer_data;
 pub mod lexer_maps;
 pub mod token_types;
 use lexer_maps::LexerMaps;
 pub use token_types::{OperatorType, PreprocessorType, PunctuatorType, TokenType};
 
-use std::{error::Error, io};
+use std::{char, error::Error, io};
+
+use self::token_types::KeywordType;
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -17,7 +20,10 @@ pub struct Lexer {
     pub line: usize,
     pub column: usize,
     pub index: usize,
+    pub lexer_data: lexer_data::LexerData,
     pub tokens: Vec<Token>,
+    fnc_paren_level: usize,
+    fnc_encountered: bool,
 }
 
 impl Lexer {
@@ -27,7 +33,10 @@ impl Lexer {
             line: 1,
             column: 1,
             index: 0,
+            lexer_data: lexer_data::LexerData::new(),
             tokens: Vec::new(),
+            fnc_paren_level: 0,
+            fnc_encountered: false,
         }
     }
 
@@ -103,7 +112,11 @@ impl Lexer {
                     }
 
                     let token_length = identifier.len();
+
                     if let Some(keyword) = lexer_map.keywords.get(identifier.as_str()) {
+                        if keyword == &KeywordType::Fnc {
+                            self.fnc_encountered = true;
+                        }
                         self.tokens.push(Token {
                             token_type: TokenType::Keyword(keyword.clone()),
                             line: self.line as u64,
@@ -116,11 +129,113 @@ impl Lexer {
                             column: self.column as u64,
                         });
                     } else {
-                        self.tokens.push(Token {
-                            token_type: TokenType::Identifier(identifier),
-                            line: self.line as u64,
-                            column: self.column as u64,
-                        });
+                        // If the identifier is a new data type defined by the user
+                        // New data types are created from structs, unions, enums.
+
+                        // Parse generic data types too
+                        match self.tokens.last().unwrap().token_type.clone() {
+                            TokenType::Punctuator(PunctuatorType::Tick) => {
+                                self.lexer_data
+                                    .add_generic_data_type(identifier.to_string());
+                                self.tokens.push(Token {
+                                    token_type: TokenType::DataType(
+                                        token_types::DataType::Generic(identifier.to_string()),
+                                    ),
+                                    line: self.line as u64,
+                                    column: self.column as u64,
+                                });
+                                while let Some(char) = chars.next() {
+                                    if char == '`' {
+                                        break;
+                                    } else if char == ' ' {
+                                        continue;
+                                    } else if char == '\n' {
+                                        self.line += 1;
+                                        self.column = 1;
+                                    } else if char == ',' {
+                                        self.tokens.push(Token {
+                                            token_type: TokenType::Punctuator(
+                                                PunctuatorType::Comma,
+                                            ),
+                                            line: self.line as u64,
+                                            column: self.column as u64,
+                                        });
+                                    } else {
+                                        let mut identifier = String::new();
+                                        identifier.push(char);
+                                        while let Some(&ch) = chars.peek() {
+                                            if ch.is_alphanumeric() || ch == '_' {
+                                                identifier.push(chars.next().unwrap());
+                                            } else {
+                                                break;
+                                            }
+                                        }
+                                        self.lexer_data
+                                            .add_generic_data_type(identifier.to_string());
+                                        self.tokens.push(Token {
+                                            token_type: TokenType::DataType(
+                                                token_types::DataType::Generic(identifier),
+                                            ),
+                                            line: self.line as u64,
+                                            column: self.column as u64,
+                                        });
+                                    }
+                                }
+                                continue;
+                                /*
+                                self.lexer_data
+                                    .add_generic_data_type(identifier.to_string());
+                                self.tokens.push(Token {
+                                    token_type: TokenType::DataType(
+                                        token_types::DataType::Generic(identifier),
+                                    ),
+                                    line: self.line as u64,
+                                    column: self.column as u64,
+                                });
+                                */
+                            }
+                            TokenType::Keyword(
+                                KeywordType::Struct | KeywordType::Union | KeywordType::Enum,
+                            ) => {
+                                self.lexer_data.add_user_data_type(identifier.to_string());
+                                self.tokens.push(Token {
+                                    token_type: TokenType::DataType(
+                                        token_types::DataType::UserDef(identifier),
+                                    ),
+                                    line: self.line as u64,
+                                    column: self.column as u64,
+                                });
+                            }
+                            _ => {
+                                if self.lexer_data.get_user_data_types().contains(&identifier) {
+                                    self.tokens.push(Token {
+                                        token_type: TokenType::DataType(
+                                            token_types::DataType::UserDef(identifier),
+                                        ),
+                                        line: self.line as u64,
+                                        column: self.column as u64,
+                                    });
+                                } else if self
+                                    .lexer_data
+                                    .get_generic_data_types()
+                                    .contains(&identifier)
+                                {
+                                    self.tokens.push(Token {
+                                        token_type: TokenType::DataType(
+                                            token_types::DataType::Generic(identifier),
+                                        ),
+                                        line: self.line as u64,
+                                        column: self.column as u64,
+                                    });
+                                } else {
+                                    self.tokens.push(Token {
+                                        token_type: TokenType::Identifier(identifier),
+                                        line: self.line as u64,
+                                        column: self.column as u64,
+                                    });
+                                }
+                            }
+                        }
                     }
                     self.column += token_length;
                 }
