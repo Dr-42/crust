@@ -45,6 +45,8 @@ pub enum DataType {
     Chr,
     Bln,
     Void,
+    UserDef(String),
+    Generic(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -157,6 +159,8 @@ impl Display for DataType {
             Chr => write!(f, "datatype: '{}'", "Chr"),
             Bln => write!(f, "datatype: '{}'", "Bln"),
             Void => write!(f, "datatype: '{}'", "Void"),
+            UserDef(name) => write!(f, "user datatype: '{}'", name),
+            Generic(name) => write!(f, "generic datatype: '{}'", name),
         }
     }
 }

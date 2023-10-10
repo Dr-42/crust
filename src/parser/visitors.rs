@@ -5,7 +5,7 @@ use super::{
 use crate::{
     lexer::{
         token_types::{KeywordType, PunctuatorType},
-        TokenType,
+        OperatorType, TokenType,
     },
     parser::node::NodeData,
 };
@@ -216,6 +216,113 @@ impl Ast {
         todo!()
     }
     pub fn visit_identifier(&mut self) -> Result<Node, Box<dyn Error>> {
-        todo!()
+        // a : i32 = 0; Variable
+        // a : [132; 6]; Array
+        // a[1][2] = 4; Array access
+        // a = 6; Variable assignment
+        // a.b = 6; Struct member access
+
+        if let Some(token) = self.lexer.peek() {
+            match token.token_type {
+                TokenType::Identifier(_) => {}
+                _ => err!(self, "Expected identifier ", token),
+            }
+        } else {
+            err!(self, "Unexpected EOF")
+        }
+
+        let result_node: Node;
+        self.lexer.advance_cursor();
+        if let Some(token) = self.lexer.peek() {
+            match token.token_type {
+                TokenType::Punctuator(PunctuatorType::Colon) => {
+                    self.lexer.reset_cursor();
+                    result_node = self.visit_declarations()?;
+                }
+                TokenType::Punctuator(PunctuatorType::LeftBracket) => {
+                    self.lexer.reset_cursor();
+                    result_node = self.visit_array_element_assignment()?;
+                }
+                TokenType::Operator(
+                    OperatorType::Assign
+                    | OperatorType::AddAssign
+                    | OperatorType::SubAssign
+                    | OperatorType::MulAssign
+                    | OperatorType::DivAssign
+                    | OperatorType::ModAssign,
+                ) => {
+                    self.lexer.reset_cursor();
+                    result_node = self.visit_variable_assignment()?;
+                }
+                TokenType::Punctuator(PunctuatorType::Dot) => {
+                    self.lexer.reset_cursor();
+                    result_node = self.visit_struct_member_access()?;
+                }
+                _ => err!(self, "Expected ':' or assignment operator ", token),
+            }
+        } else {
+            err!(self, "Unexpected EOF")
+        }
+        Ok(result_node)
+    }
+
+    fn visit_declarations(&mut self) -> Result<Node, Box<dyn Error>> {
+        if let Some(token) = self.lexer.peek() {
+            match token.token_type {
+                TokenType::Identifier(_) => {}
+                _ => err!(self, "Expected identifier ", token),
+            }
+        } else {
+            err!(self, "Unexpected EOF")
+        }
+
+        self.lexer.advance_cursor();
+        if let Some(token) = self.lexer.peek() {
+            match token.token_type {
+                TokenType::Punctuator(PunctuatorType::Colon) => {}
+                _ => err!(self, "Expected ':' ", token),
+            }
+        } else {
+            err!(self, "Unexpected EOF")
+        }
+
+        let result_node: Node;
+        self.lexer.advance_cursor();
+        if let Some(token) = self.lexer.peek() {
+            match token.token_type {
+                TokenType::DataType(_) => {
+                    self.lexer.reset_cursor();
+                    result_node = self.visit_variable_declaration()?;
+                }
+                TokenType::Punctuator(PunctuatorType::LeftBracket) => {
+                    self.lexer.reset_cursor();
+                    result_node = self.visit_array_declaration()?;
+                }
+                _ => err!(self, "Expected data type ", token),
+            }
+        } else {
+            err!(self, "Unexpected EOF")
+        }
+        Ok(result_node)
+    }
+
+    fn visit_variable_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
+        todo!("visit_variable_declaration")
+    }
+
+    fn visit_array_declaration(&mut self) -> Result<Node, Box<dyn Error>> {
+        todo!("visit_array_declaration")
+    }
+
+    fn visit_array_element_assignment(&mut self) -> Result<Node, Box<dyn Error>> {
+        todo!("visit_array_element_assignment")
+    }
+
+    fn visit_variable_assignment(&mut self) -> Result<Node, Box<dyn Error>> {
+        todo!("visit_variable_assignment")
+    }
+
+    fn visit_struct_member_access(&mut self) -> Result<Node, Box<dyn Error>> {
+        todo!("visit_struct_member_access")
     }
 }

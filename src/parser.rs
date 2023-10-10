@@ -1,9 +1,12 @@
+mod ast_data;
 pub mod node;
 pub mod node_types;
 mod visitors;
 
-use node::Node;
-use std::{error::Error, iter::Peekable};
+use crate::parser::ast_data::AstData;
+use crate::parser::node::Node;
+use peekmore::{PeekMore, PeekMoreIterator};
+use std::error::Error;
 
 use crate::{
     lexer::{self, token_types::TokenType},
@@ -13,8 +16,8 @@ use crate::{
 pub struct Ast {
     pub root_node: Option<Node>,
     pub filename: String,
-    lexer: Peekable<lexer::Lexer>,
-    in_function: bool,
+    pub ast_data: AstData,
+    lexer: PeekMoreIterator<lexer::Lexer>,
 }
 
 impl Ast {
@@ -24,8 +27,8 @@ impl Ast {
         Ok(Self {
             root_node: None,
             filename: lexer.filename.clone(),
-            lexer: lexer.peekable(),
-            in_function: false,
+            ast_data: AstData::new(),
+            lexer: lexer.peekmore(),
         })
     }
 
