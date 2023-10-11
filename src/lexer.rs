@@ -147,6 +147,11 @@ impl Lexer {
                                 while let Some(char) = chars.next() {
                                     if char == '`' {
                                         self.column += 1;
+                                        self.tokens.push(Token {
+                                            token_type: TokenType::Punctuator(PunctuatorType::Tick),
+                                            line: self.line as u64,
+                                            column: self.column as u64,
+                                        });
                                         break;
                                     } else if char == ' ' {
                                         self.column += 1;

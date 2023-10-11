@@ -19,6 +19,7 @@ pub enum NodeType {
     FunctionDeclaration,
     FunctionDeclarationArgument,
     FunctionDeclarationArguments,
+    FunctionGenerics,
     VariableAssignment,
     ArrayAssignment,
     ArrayElementAssignment,

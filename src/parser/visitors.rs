@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     lexer::{
-        token_types::{KeywordType, PunctuatorType},
+        token_types::{DataType, KeywordType, PunctuatorType},
         OperatorType, TokenType,
     },
     parser::node::NodeData,
@@ -49,6 +49,39 @@ impl Ast {
                         ));
                     }
                     _ => err!(self, "Expected identifier ", token),
+                }
+            } else {
+                err!(self, "Unexpected EOF")
+            }
+            if let Some(token) = self.lexer.peek() {
+                // Generic data types enclosed in '`'
+                if token.token_type == TokenType::Punctuator(PunctuatorType::Tick) {
+                    //self.lexer.next();
+                    let mut tick_encountered = false;
+                    let mut generic_node =
+                        Node::new(NodeType::FunctionGenerics, token.line, token.column, None);
+                    while let Some(token) = self.lexer.next() {
+                        match token.token_type {
+                            TokenType::Punctuator(PunctuatorType::Tick) => {
+                                if tick_encountered {
+                                    function_node.add_child(generic_node);
+                                    break;
+                                } else {
+                                    tick_encountered = true;
+                                }
+                            }
+                            TokenType::DataType(DataType::Generic(data_type)) => {
+                                generic_node.add_child(Node::new(
+                                    NodeType::Type,
+                                    token.line,
+                                    token.column,
+                                    Some(NodeData::Type(DataType::Generic(data_type))),
+                                ));
+                            }
+                            TokenType::Punctuator(PunctuatorType::Comma) => {}
+                            _ => err!(self, "Expected generic data type ", token),
+                        }
+                    }
                 }
             } else {
                 err!(self, "Unexpected EOF")
