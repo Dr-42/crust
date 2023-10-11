@@ -6,7 +6,9 @@ pub use token_types::{OperatorType, PreprocessorType, PunctuatorType, TokenType}
 
 use std::{error::Error, io};
 
-use self::token_types::KeywordType;
+use crate::err;
+
+use self::token_types::{DataType, KeywordType};
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -417,7 +419,80 @@ impl Lexer {
             }
         }
 
+        self.post_process()?;
         Ok(())
+    }
+
+    fn post_process(&mut self) -> Result<(), Box<dyn Error>> {
+        let mut new_tokens = Vec::new();
+        while let Some(token) = self.cloned_peek() {
+            //Parse the ptr and fnptr types
+            match token.token_type {
+                TokenType::Keyword(KeywordType::Ptr) => {
+                    let pointer_token_type = self.lex_pointer()?;
+                    let token = Token {
+                        token_type: TokenType::DataType(pointer_token_type),
+                        line: token.line,
+                        column: token.column,
+                    };
+                    new_tokens.push(token);
+                }
+                _ => {
+                    new_tokens.push(token.clone());
+                }
+            }
+            self.next();
+        }
+        self.tokens = new_tokens;
+        self.index = 0;
+        Ok(())
+    }
+
+    fn lex_pointer(&mut self) -> Result<DataType, Box<dyn Error>> {
+        let res: DataType;
+        if let Some(token) = self.next() {
+            if token.token_type != TokenType::Keyword(KeywordType::Ptr) {
+                err!(self, "Expected a pointer type", token);
+            }
+        } else {
+            err!(self, "Unexpected EOF");
+        }
+
+        if let Some(token) = self.next() {
+            if token.token_type != TokenType::Punctuator(PunctuatorType::Tick) {
+                err!(self, "Expected a '`'", token);
+            }
+        } else {
+            err!(self, "Unexpected EOF");
+        }
+
+        if let Some(token) = self.cloned_peek() {
+            match token.token_type {
+                TokenType::DataType(data_type) => {
+                    res = DataType::Ptr(Box::new(data_type));
+                    self.next();
+                }
+                TokenType::Keyword(KeywordType::Ptr) => {
+                    let pointer_type = self.lex_pointer()?;
+                    res = DataType::Ptr(Box::new(pointer_type));
+                    self.next();
+                }
+                _ => {
+                    err!(self, "Expected a data type", token);
+                }
+            }
+        } else {
+            err!(self, "Unexpected EOF");
+        }
+        Ok(res)
+    }
+
+    fn cloned_peek(&self) -> Option<Token> {
+        if self.index < self.tokens.len() {
+            Some(self.tokens[self.index].clone())
+        } else {
+            None
+        }
     }
 }
 

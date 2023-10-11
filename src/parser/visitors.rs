@@ -12,6 +12,7 @@ use crate::{
 
 use std::error::Error;
 
+#[macro_export]
 macro_rules! err {
     ($self:expr, $msg:expr) => {
         return Err($msg.into())

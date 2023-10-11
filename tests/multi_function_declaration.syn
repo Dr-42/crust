@@ -1,0 +1,6 @@
+fnc print(a : i32, b : str, c : u64) : void;
+fnc add(a : i32, b : i32) : i32;
+fnc accumulate(a : ptr`i32`, b : i32) : void;
+fnc add_two(a : ptr`i32`) : ptr`i32`;
+fnc garbage() : ptr`ptr`ptr`i32```;
+fnc shit(alpa: ptr`ptr`u64``, boll: ptr`i32`) : ptr`f64`;

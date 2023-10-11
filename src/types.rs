@@ -27,6 +27,7 @@ pub enum KeywordType {
     False,
     Null,
     Ptr,
+    Fnptr,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -47,6 +48,11 @@ pub enum DataType {
     Void,
     UserDef(String),
     Generic(String),
+    Ptr(Box<DataType>),
+    FnPtr {
+        return_type: Box<DataType>,
+        args: Vec<DataType>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -125,6 +131,7 @@ impl Display for KeywordType {
             KeywordType::Extern => write!(f, "keyword: extern"),
             KeywordType::False => write!(f, "keyword: false"),
             KeywordType::Fnc => write!(f, "keyword: fnc"),
+            KeywordType::Fnptr => write!(f, "keyword: fnptr"),
             KeywordType::For => write!(f, "keyword: for"),
             KeywordType::If => write!(f, "keyword: if"),
             KeywordType::Is => write!(f, "keyword: is"),
@@ -161,6 +168,12 @@ impl Display for DataType {
             Void => write!(f, "datatype: '{}'", "Void"),
             UserDef(name) => write!(f, "user datatype: '{}'", name),
             Generic(name) => write!(f, "generic datatype: '{}'", name),
+            Ptr(datatype) => write!(f, "pointer datatype: '{}'", datatype),
+            FnPtr { return_type, args } => write!(
+                f,
+                "function pointer datatype: '{}'",
+                format!("{}({:?})", return_type, args)
+            ),
         }
     }
 }

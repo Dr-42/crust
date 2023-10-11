@@ -1,2 +1,0 @@
-fnc print(a : i32, b : str, c : u64) : void;
-fnc add(a : i32, b : i32) : i32;
