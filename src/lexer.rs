@@ -144,6 +144,7 @@ impl Lexer {
                                     line: self.line as u64,
                                     column: self.column as u64,
                                 });
+                                self.column += token_length;
                                 while let Some(char) = chars.next() {
                                     if char == '`' {
                                         self.column += 1;

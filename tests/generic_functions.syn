@@ -1,4 +1,4 @@
-fnc mul`S, U`(a: S, b: U) : ptr`T`;
+fnc mul`Sa`(a: ptr`Sa`, b: Sa) : ptr`S`;
 
 fnc add`T`(a: T, b: T) : T {
     {
@@ -12,3 +12,5 @@ fnc sub`U`(a: U, b: U) : U {
     hho: U = 4;
     ret a - b;
 }
+
+fnc run(a : i32, user_run : fnptr`void`(i32, ptr`i32`));
