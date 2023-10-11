@@ -484,6 +484,15 @@ impl Lexer {
         } else {
             err!(self, "Unexpected EOF");
         }
+
+        if let Some(token) = self.cloned_peek() {
+            if token.token_type != TokenType::Punctuator(PunctuatorType::Tick) {
+                err!(self, "Expected a '`'", token);
+            }
+        } else {
+            err!(self, "Unexpected EOF");
+        }
+
         Ok(res)
     }
 
