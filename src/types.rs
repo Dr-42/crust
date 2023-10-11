@@ -27,7 +27,6 @@ pub enum KeywordType {
     False,
     Null,
     Ptr,
-    Fnptr,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -131,7 +130,6 @@ impl Display for KeywordType {
             KeywordType::Extern => write!(f, "keyword: extern"),
             KeywordType::False => write!(f, "keyword: false"),
             KeywordType::Fnc => write!(f, "keyword: fnc"),
-            KeywordType::Fnptr => write!(f, "keyword: fnptr"),
             KeywordType::For => write!(f, "keyword: for"),
             KeywordType::If => write!(f, "keyword: if"),
             KeywordType::Is => write!(f, "keyword: is"),

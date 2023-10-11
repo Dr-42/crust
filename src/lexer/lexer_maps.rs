@@ -38,7 +38,6 @@ impl LexerMaps {
             map.insert("false", KeywordType::False);
             map.insert("null", KeywordType::Null);
             map.insert("ptr", KeywordType::Ptr);
-            map.insert("fnptr", KeywordType::Fnptr);
             map
         };
 

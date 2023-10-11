@@ -477,8 +477,76 @@ impl Lexer {
                     res = DataType::Ptr(Box::new(pointer_type));
                     self.next();
                 }
+                // Function pointers
+                // Example syntax ptr`(i32, i32):void`
+                TokenType::Punctuator(PunctuatorType::LeftParen) => {
+                    self.next();
+                    let mut args = Vec::new();
+                    let return_type;
+                    while let Some(token) = self.cloned_peek() {
+                        match token.token_type {
+                            TokenType::Punctuator(PunctuatorType::RightParen) => {
+                                self.next();
+                                break;
+                            }
+                            TokenType::Punctuator(PunctuatorType::Comma) => {
+                                self.next();
+                            }
+                            TokenType::DataType(data_type) => {
+                                args.push(data_type);
+                                self.next();
+                            }
+                            TokenType::Keyword(KeywordType::Ptr) => {
+                                let pointer_type = self.lex_pointer()?;
+                                args.push(pointer_type);
+                                self.next();
+                            }
+                            _ => {
+                                err!(self, "Expected a data type ',' or ')' ", token);
+                            }
+                        }
+                    }
+
+                    if let Some(token) = self.next() {
+                        if token.token_type != TokenType::Punctuator(PunctuatorType::Colon) {
+                            err!(self, "Expected a ':'", token);
+                        }
+                    } else {
+                        err!(self, "Unexpected EOF");
+                    }
+
+                    if let Some(token) = self.next() {
+                        match token.token_type {
+                            TokenType::DataType(data_type) => {
+                                return_type = data_type;
+                            }
+                            TokenType::Keyword(KeywordType::Ptr) => {
+                                let pointer_type = self.lex_pointer()?;
+                                return_type = pointer_type;
+                            }
+                            _ => {
+                                err!(self, "Expected a data type for return ", token);
+                            }
+                        }
+                    } else {
+                        err!(self, "Unexpected EOF");
+                    }
+
+                    if let Some(token) = self.cloned_peek() {
+                        if token.token_type != TokenType::Punctuator(PunctuatorType::Tick) {
+                            err!(self, "Expected a '`'", token);
+                        }
+                    } else {
+                        err!(self, "Unexpected EOF");
+                    }
+
+                    res = DataType::FnPtr {
+                        return_type: Box::new(return_type),
+                        args,
+                    };
+                }
                 _ => {
-                    err!(self, "Expected a data type", token);
+                    err!(self, "Expected a data type ", token);
                 }
             }
         } else {
