@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+pub mod nodes;
+
 #[derive(Debug)]
 pub enum Expr {
     Number(i32),
