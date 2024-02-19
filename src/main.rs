@@ -4,11 +4,11 @@ use lalrpop_util::lalrpop_mod;
 
 pub mod ast;
 
-lalrpop_mod!(pub simple_expr);
+lalrpop_mod!(pub parser);
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let parser = simple_expr::ExprParser::new();
-    let res = parser.parse("32 * 24 + 68 * (70 + 60 - 32) * (38 + (20 -9))")?;
-    println!("{:#?}", res);
+    let parser = parser::ProgramParser::new();
+    let tree = parser.parse("a + b *  --3 ^ 4 + 5 + -a;")?;
+    println!("{:#?}", tree);
     Ok(())
 }

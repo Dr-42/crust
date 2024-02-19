@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum BuilinType {
     I8,
     I16,
@@ -15,6 +16,7 @@ pub enum BuilinType {
     Str,
 }
 
+#[derive(Debug)]
 pub enum Type {
     Builtin(BuilinType),
     Pointer(Box<Type>),
@@ -46,46 +48,51 @@ pub enum Type {
     },
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum UnaryOp {
-    BitNot,
-    Not,
-    Neg,
-    Pos,
-    Deref,
+    Dec,
+    Inc,
     Ref,
-    PreInc,
-    PreDec,
+    Deref,
+    Pos,
+    Neg,
+    Not,
+    BitNot,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum BinaryOp {
-    ModAssign,
-    DivAssign,
-    MulAssign,
-    SubAssign,
-    AddAssign,
-    Assign,
-    Or,
-    And,
-    BitOr,
-    BitXor,
-    BitAnd,
-    Neq,
-    Eq,
-    Gte,
-    Gt,
-    Lte,
-    Lt,
-    Shr,
-    Shl,
-    Sub,
-    Add,
-    Mod,
-    Div,
     Mul,
+    Div,
+    Mod,
+    Add,
+    Sub,
+    Shl,
+    Shr,
+    Lt,
+    Lte,
+    Gt,
+    Gte,
+    Eq,
+    Neq,
+    BitAnd,
+    BitXor,
+    BitOr,
+    And,
+    Or,
 }
 
+#[derive(Debug)]
+pub enum AssignOp {
+    Assign,
+    AddAssign,
+    SubAssign,
+    MulAssign,
+    DivAssign,
+    ModAssign,
+}
+
+#[derive(Debug)]
 pub enum Expr {
     Numeric(i64),
     Strng(String),
@@ -111,14 +118,6 @@ pub enum Expr {
         name: String,
         index: Box<Expr>,
     },
-    StructInit {
-        ty: String,
-        name: String,
-        fields: Vec<(String, Expr)>,
-    },
-    ArrayInit {
-        elements: Vec<Expr>,
-    },
     MemberAccess {
         name: String,
         member: String,
@@ -127,17 +126,11 @@ pub enum Expr {
         expr: Box<Expr>,
         to: Type,
     },
-    SizeOf {
-        expr: Box<Expr>,
-    },
-    AlignOf {
-        member: String,
-        ty: Type,
-    },
 }
 
+#[derive(Debug)]
 pub enum Stmt {
-    Expr(Expr),
+    Expr(Box<Expr>),
     If {
         cond: Expr,
         then: Box<Stmt>,
@@ -185,8 +178,38 @@ pub enum Stmt {
         body: Box<Stmt>,
         generics: Option<Vec<Type>>,
     },
+    VarAssign {
+        name: String,
+        value: Expr,
+        op: AssignOp,
+    },
+    StructAssign {
+        name: String,
+        field: String,
+        value: Expr,
+    },
+    StructMemberAssign {
+        name: String,
+        member: String,
+        value: Expr,
+        op: AssignOp,
+    },
+    UnionAssign {
+        name: String,
+        field: String,
+        value: Expr,
+    },
+    Break,
+    Continue,
 }
 
+#[derive(Debug)]
 pub struct Program {
-    pub stmts: Vec<Stmt>,
+    pub stmts: Vec<Box<Stmt>>,
+}
+
+impl Program {
+    pub fn new(stmts: Vec<Box<Stmt>>) -> Self {
+        Self { stmts }
+    }
 }
