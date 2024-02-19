@@ -8,17 +8,17 @@ pub Program: Program = {
 };
 
 Stmt: Box<Stmt> = {
-	Expr,
+	<Expr> ";" => Box::new(Stmt::Expr(<>)),
 	If,
 	While,
 	For,
 	Return,
 	Block,
 	VarDecl,
-	StructDecl,
+	<StructDecl> ";" => Box::new(Stmt::StructDecl(<>)),
 	ImplDecl,
-	EnumDecl,
-	UnionDecl,
+	<EnumDecl> ";" => Box::new(Stmt::EnumDecl(<>)),
+	<UnionDecl> ";" => Box::new(Stmt::UnionDecl(<>)),
 	FunctionDecl,
 };
 
@@ -67,41 +67,73 @@ Var: Box<Expr::Var> = {
 };
 
 UnaryOp: Box<Expr::UnaryOp> = {
+	#[precedence(level="0")]
 	"~" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::BitNot, <>)),
+	#[precedence(level="1")] #[assoc(side="left")]
 	"!" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Not, <>)),
+	#[precedence(level="2")] #[assoc(side="left")]
 	"-" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Neg, <>)),
+	#[precedence(level="3")] #[assoc(side="left")]
 	"+" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Pos, <>)),
+	#[precedence(level="4")] #[assoc(side="left")]
 	"*" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Deref, <>)),
+	#[precedence(level="5")] #[assoc(side="left")]
 	"&" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Ref, <>)),
+	#[precedence(level="6")] #[assoc(side="left")]
 	"++" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::PreInc, <>)),
+	#[precedence(level="7")] #[assoc(side="left")]
 	"--" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::PreDec, <>)),
 };
 
 BinaryOp: Box<Expr::BinaryOp> = {
-	<Expr> "=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Assign, <>, <>)),
-	<Expr> "+=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::AddAssign, <>, <>)),
-	<Expr> "-=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::SubAssign, <>, <>)),
-	<Expr> "*=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::MulAssign, <>, <>)),
-	<Expr> "/=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::DivAssign, <>, <>)),
-	<Expr> "%=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::ModAssign, <>, <>)),
-	<Expr> "||" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Or, <>, <>)),
-	<Expr> "&&" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::And, <>, <>)),
-	<Expr> "|" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitOr, <>, <>)),
-	<Expr> "^" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitXor, <>, <>)),
-	<Expr> "&" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitAnd, <>, <>)),
-	<Expr> "!=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Neq, <>, <>)),
-	<Expr> "==" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Eq, <>, <>)),
-	<Expr> ">=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Gte, <>, <>)),
-	<Expr> ">" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Gt, <>, <>)),
-	<Expr> "<=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Lte, <>, <>)),
-	<Expr> "<" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Lt, <>, <>)),
-	<Expr> ">>" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Shr, <>, <>)),
-	<Expr> "<<" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Shl, <>, <>)),
-	<Expr> "-" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Sub, <>, <>)),
-	<Expr> "+" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Add, <>, <>)),
-	<Expr> "%" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Mod, <>, <>)),
-	<Expr> "/" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Div, <>, <>)),
+	#[precedence(level="0")]
 	<Expr> "*" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Mul, <>, <>)),
+	#[precedence(level="1")] #[assoc(side="left")]
+	<Expr> "/" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Div, <>, <>)),
+	#[precedence(level="2")] #[assoc(side="left")]
+	<Expr> "%" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Mod, <>, <>)),
+	#[precedence(level="3")] #[assoc(side="left")]
+	<Expr> "+" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Add, <>, <>)),
+	#[precedence(level="4")] #[assoc(side="left")]
+	<Expr> "-" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Sub, <>, <>)),
+	#[precedence(level="5")] #[assoc(side="left")]
+	<Expr> "<<" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Shl, <>, <>)),
+	#[precedence(level="6")] #[assoc(side="left")]
+	<Expr> ">>" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Shr, <>, <>)),
+	#[precedence(level="7")] #[assoc(side="left")]
+	<Expr> "<" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Lt, <>, <>)),
+	#[precedence(level="8")] #[assoc(side="left")]
+	<Expr> "<=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Lte, <>, <>)),
+	#[precedence(level="9")] #[assoc(side="left")]
+	<Expr> ">" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Gt, <>, <>)),
+	#[precedence(level="10")] #[assoc(side="left")]
+	<Expr> ">=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Gte, <>, <>)),
+	#[precedence(level="11")] #[assoc(side="left")]
+	<Expr> "==" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Eq, <>, <>)),
+	#[precedence(level="12")] #[assoc(side="left")]
+	<Expr> "!=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Neq, <>, <>)),
+	#[precedence(level="13")] #[assoc(side="left")]
+	<Expr> "&" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitAnd, <>, <>)),
+	#[precedence(level="14")] #[assoc(side="left")]
+	<Expr> "^" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitXor, <>, <>)),
+	#[precedence(level="15")] #[assoc(side="left")]
+	<Expr> "|" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitOr, <>, <>)),
+	#[precedence(level="16")] #[assoc(side="left")]
+	<Expr> "&&" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::And, <>, <>)),
+	#[precedence(level="17")] #[assoc(side="left")]
+	<Expr> "||" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Or, <>, <>)),
+	#[precedence(level="18")] #[assoc(side="left")]
+	<Expr> "%=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::ModAssign, <>, <>)),
+	#[precedence(level="19")] #[assoc(side="left")]
+	<Expr> "/=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::DivAssign, <>, <>)),
+	#[precedence(level="20")] #[assoc(side="left")]
+	<Expr> "*=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::MulAssign, <>, <>)),
+	#[precedence(level="21")] #[assoc(side="left")]
+	<Expr> "-=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::SubAssign, <>, <>)),
+	#[precedence(level="22")] #[assoc(side="left")]
+	<Expr> "+=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::AddAssign, <>, <>)),
+	#[precedence(level="23")] #[assoc(side="left")]
+	<Expr> "=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Assign, <>, <>)),
 };
 
 Call: Box<Expr::Call> = {
@@ -260,6 +292,13 @@ FunctionDecl: Box<Stmt::FunctionDecl> = {
 		ret: t,
 		body: <>
 		generics: Some(vec![])
+	}),
+	"fnc" <name:Expr> "(" (Stmt)* ")" ":" <t:Type> ";" => Box::new(Stmt::FunctionDecl{
+		name: name,
+		args: <>
+		ret: t,
+		body: None,
+		generics: None,
 	}),
 };
 
