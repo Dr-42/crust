@@ -18,6 +18,10 @@ pub enum BuilinType {
 pub enum Type {
     Builtin(BuilinType),
     Pointer(Box<Type>),
+    Generic {
+        name: String,
+        restrictions: Vec<Type>,
+    },
     Array {
         base: Box<Type>,
         length: usize,
@@ -25,9 +29,11 @@ pub enum Type {
     Struct {
         name: String,
         fields: Vec<(String, Type)>,
+        generics: Vec<Type>,
     },
     Function {
         args: Vec<Type>,
+        generics: Vec<Type>,
         ret: Box<Type>,
     },
     Enum {
@@ -104,6 +110,7 @@ pub enum Expr {
     Call {
         name: String,
         args: Vec<Expr>,
+        generics: Vec<Type>,
         ty: Type,
     },
     Index {
@@ -154,6 +161,7 @@ pub enum Stmt {
     StructDecl {
         name: String,
         fields: Vec<(String, Type)>,
+        generics: Vec<Type>,
     },
     EnumDecl {
         name: String,
@@ -168,6 +176,7 @@ pub enum Stmt {
         args: Vec<(String, Type)>,
         ret: Type,
         body: Box<Stmt>,
+        generics: Vec<Type>,
     },
 }
 
