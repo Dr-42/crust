@@ -20,7 +20,7 @@ pub enum Type {
     Pointer(Box<Type>),
     Generic {
         name: String,
-        restrictions: Vec<Type>,
+        restrictions: Option<Vec<Type>>,
     },
     Array {
         base: Box<Type>,
@@ -33,7 +33,7 @@ pub enum Type {
     },
     Function {
         args: Vec<Type>,
-        generics: Vec<Type>,
+        generics: Option<Vec<Type>>,
         ret: Box<Type>,
     },
     Enum {
@@ -89,47 +89,50 @@ pub enum BinaryOp {
 pub enum Expr {
     Numeric(i64),
     Strng(String),
-    Float(f64),
-    Char(char),
-    Bool(bool),
-    Var {
-        name: String,
-        ty: Type,
-    },
+    Flt(f64),
+    Chr(char),
+    Bln(bool),
+    Var(String),
     UnaryOp {
         op: UnaryOp,
         expr: Box<Expr>,
-        ty: Type,
     },
     BinaryOp {
         lhs: Box<Expr>,
         op: BinaryOp,
         rhs: Box<Expr>,
-        ty: Type,
     },
     Call {
         name: String,
         args: Vec<Expr>,
         generics: Vec<Type>,
-        ty: Type,
     },
     Index {
         name: String,
         index: Box<Expr>,
-        ty: Type,
     },
-    Member {
+    StructInit {
+        ty: String,
+        name: String,
+        fields: Vec<(String, Expr)>,
+    },
+    ArrayInit {
+        elements: Vec<Expr>,
+    },
+    MemberAccess {
         name: String,
         member: String,
-        ty: Type,
     },
     Cast {
         expr: Box<Expr>,
-        from: Type,
         to: Type,
     },
     SizeOf {
         expr: Box<Expr>,
+    },
+    AlignOf {
+        member: String,
+        ty: Type,
     },
 }
 
@@ -161,7 +164,11 @@ pub enum Stmt {
     StructDecl {
         name: String,
         fields: Vec<(String, Type)>,
-        generics: Vec<Type>,
+        generics: Option<Vec<Type>>,
+    },
+    ImplDecl {
+        ty: Type,
+        methods: Vec<Stmt>,
     },
     EnumDecl {
         name: String,
@@ -176,7 +183,7 @@ pub enum Stmt {
         args: Vec<(String, Type)>,
         ret: Type,
         body: Box<Stmt>,
-        generics: Vec<Type>,
+        generics: Option<Vec<Type>>,
     },
 }
 

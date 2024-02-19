@@ -1,0 +1,358 @@
+use std::str::FromStr;
+use crate::ast::nodes::*;
+
+grammar;
+
+pub Program: Program = {
+	(Stmt)*
+};
+
+Stmt: Box<Stmt> = {
+	Expr,
+	If,
+	While,
+	For,
+	Return,
+	Block,
+	VarDecl,
+	StructDecl,
+	ImplDecl,
+	EnumDecl,
+	UnionDecl,
+	FunctionDecl,
+};
+
+Expr: Box<Expr> = {
+	Numeric,
+	Strng,
+	Flt,
+	Chr,
+	Bln,
+	Var,
+	UnaryOp,
+	BinaryOp,
+	Call,
+	Index,
+	StructInit,
+	ArrayInit,
+	MemberAccess,
+	Cast,
+	SizeOf,
+	AlignOf,
+};
+
+Numeric: Box<Expr::Numeric> = {
+	r"[0-9]+" => Box::new(Expr::Numeric(i64::from_str(<>).unwrap()))
+};
+
+Strng: Box<Expr::Strng> = {
+	r#""[^"]*""# => Box::new(Expr::Strng(String::from_str(<>).unwrap()))
+};
+
+Flt: Box<Expr::Flt> = {
+	r"[0-9]+\.[0-9]+" => Box::new(Expr::Flt(f64::from_str(<>).unwrap()))
+};
+
+Chr: Box<Expr::Chr> = {
+	r"'.'" => Box::new(Expr::Chr(char::from_str(<>).unwrap()))
+};
+
+Bln: Box<Expr::Bln> = {
+	"true" => Box::new(Expr::Bln(true)),
+	"false" => Box::new(Expr::Bln(false))
+};
+
+Var: Box<Expr::Var> = {
+	r"[a-zA-Z_][a-zA-Z0-9_]*" => Box::new(Expr::Var(String::from_str(<>).unwrap()))
+};
+
+UnaryOp: Box<Expr::UnaryOp> = {
+	"~" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::BitNot, <>)),
+	"!" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Not, <>)),
+	"-" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Neg, <>)),
+	"+" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Pos, <>)),
+	"*" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Deref, <>)),
+	"&" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::Ref, <>)),
+	"++" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::PreInc, <>)),
+	"--" <Expr> => Box::new(Expr::UnaryOp(UnaryOp::PreDec, <>)),
+};
+
+BinaryOp: Box<Expr::BinaryOp> = {
+	<Expr> "=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Assign, <>, <>)),
+	<Expr> "+=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::AddAssign, <>, <>)),
+	<Expr> "-=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::SubAssign, <>, <>)),
+	<Expr> "*=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::MulAssign, <>, <>)),
+	<Expr> "/=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::DivAssign, <>, <>)),
+	<Expr> "%=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::ModAssign, <>, <>)),
+	<Expr> "||" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Or, <>, <>)),
+	<Expr> "&&" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::And, <>, <>)),
+	<Expr> "|" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitOr, <>, <>)),
+	<Expr> "^" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitXor, <>, <>)),
+	<Expr> "&" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::BitAnd, <>, <>)),
+	<Expr> "!=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Neq, <>, <>)),
+	<Expr> "==" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Eq, <>, <>)),
+	<Expr> ">=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Gte, <>, <>)),
+	<Expr> ">" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Gt, <>, <>)),
+	<Expr> "<=" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Lte, <>, <>)),
+	<Expr> "<" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Lt, <>, <>)),
+	<Expr> ">>" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Shr, <>, <>)),
+	<Expr> "<<" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Shl, <>, <>)),
+	<Expr> "-" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Sub, <>, <>)),
+	<Expr> "+" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Add, <>, <>)),
+	<Expr> "%" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Mod, <>, <>)),
+	<Expr> "/" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Div, <>, <>)),
+	<Expr> "*" <Expr> => Box::new(Expr::BinaryOp(BinaryOp::Mul, <>, <>)),
+};
+
+Call: Box<Expr::Call> = {
+	<Expr> "(" (Expr)* ")" => Box::new(Expr::Call(<>))
+};
+
+Index: Box<Expr::Index> = {
+	<s:Expr> "[" <i:Expr> "]" => Box::new(Expr::Index{
+		name: s,
+		index: i
+	})
+};
+
+StructInit: Box<Expr::StructInit> = {
+	<name:Expr> "{" (<Expr>)* "}" => Box::new(Expr::StructInit{
+		name: name,
+		fields: <>
+	})
+};
+
+ArrayInit: Box<Expr::ArrayInit> = {
+	"[" (<Expr>)* "]" => Box::new(Expr::ArrayInit(<>))
+};
+
+MemberAccess: Box<Expr::MemberAccess> = {
+	<p:Expr> "." <m:Expr> => Box::new(Expr::MemberAccess{
+		name: p,
+		member: m
+	})
+};
+
+Cast: Box<Expr::Cast> = {
+	<e:Expr> "as" <t:Type> => Box::new(Expr::Cast{
+		expr: e,
+		to: t
+	})
+};
+
+SizeOf: Box<Expr::SizeOf> = {
+	"sizeof" <t:Type> => Box::new(Expr::SizeOf(t))
+};
+
+AlignOf: Box<Expr::AlignOf> = {
+	"alignof" <t:Type> => Box::new(Expr::AlignOf(t))
+};
+
+If: Box<Stmt::If> = {
+	"if" "(" <c:Expr> ")" <b:Stmt> "else" <e:Stmt> => Box::new(Stmt::If{
+		cond: c,
+		then: b,
+		els: e,
+		elifs: None,
+	}),
+	"if" "(" <c:Expr> ")" <b:Stmt> => Box::new(Stmt::If{
+ 		cond: c,
+		then: b,
+		els: None,
+		elifs: None,
+	}),
+	"if" "(" <c:Expr> ")" <b:Stmt> "elif" <e:Stmt> => Box::new(Stmt::If{
+		cond: c,
+		then: b,
+		els: None,
+		elifs: Some(vec![e]),
+	}),
+	"if" "(" <c:Expr> ")" <b:Stmt> "elif" <e:Stmt> "else" <f:Stmt> => Box::new(Stmt::If{
+		cond: c,
+		then: b,
+		els: f,
+		elifs: Some(vec![e]),
+	}),
+};
+
+While: Box<Stmt::While> = {
+	"while" "(" <c:Expr> ")" <b:Stmt> => Box::new(Stmt::While{
+		cond: c,
+		body: b,
+	})
+};
+
+For: Box<Stmt::For> = {
+	"for" "(" <i:Stmt> <c:Expr> ";" <u:Stmt> ")" <b:Stmt> => Box::new(Stmt::For{
+		init: i,
+		cond: c,
+		update: u,
+		body: b,
+	})
+};
+
+Return: Box<Stmt::Return> = {
+	"ret" <Expr> => Box::new(Stmt::Return(<>))
+};
+
+Block: Box<Stmt::Block> = {
+	"{" (Stmt)* "}" => Box::new(Stmt::Block(<>))
+};
+
+VarDecl: Box<Stmt::VarDecl> = {
+	"var" <name:Expr> ":" <t:Type> "=" <val:Expr> => Box::new(Stmt::VarDecl{
+		name: name,
+		ty: t,
+		value: val,
+	}),
+	"var" <name:Expr> ":" <t:Type> => Box::new(Stmt::VarDecl{
+		name: name,
+		ty: t,
+		val: None,
+	}),
+};
+
+StructDecl: Box<Stmt::StructDecl> = {
+	"struct" <name:Expr> "{" (Stmt)* "}" => Box::new(Stmt::StructDecl{
+		name: name,
+		fields: <>
+		generics: None,
+	}),
+	"struct" <name:Expr> "<" (Expr)* ">" "{" (Stmt)* "}" => Box::new(Stmt::StructDecl{
+		name: name,
+		fields: <>
+		generics: Some(vec![])
+	}),
+};
+
+ImplDecl: Box<Stmt::ImplDecl> = {
+	"impl" <t:Type> "{" (Stmt)* "}" => Box::new(Stmt::ImplDecl{
+		ty: t,
+		methods: <>
+	})
+};
+
+EnumDecl: Box<Stmt::EnumDecl> = {
+	"enum" <name:Expr> "{" (Expr)* "}" => Box::new(Stmt::EnumDecl{
+		name: name,
+		variants: <>
+	})
+};
+
+UnionDecl: Box<Stmt::UnionDecl> = {
+	"union" <name:Expr> "{" (Stmt)* "}" => Box::new(Stmt::UnionDecl{
+		name: name,
+		fields: <>
+	})
+};
+
+FunctionDecl: Box<Stmt::FunctionDecl> = {
+	"fnc" <name:Expr> "(" (Stmt)* ")" ":" <t:Type> "{" (Stmt)* "}" => Box::new(Stmt::FunctionDecl{
+		name: name,
+		args: <>
+		ret: t,
+		body: <>
+		generics: None,
+	}),
+	"fnc" <name:Expr> "<" (Expr)* ">" "(" (Stmt)* ")" ":" <t:Type> "{" (Stmt)* "}" => Box::new(Stmt::FunctionDecl{
+		name: name,
+		args: <>
+		ret: t,
+		body: <>
+		generics: Some(vec![])
+	}),
+};
+
+Type: Box<Type> = {
+	Builtin,
+	Pointer,
+	Generic,
+	Array,
+	Struct,
+	Function,
+	Enum,
+	Union,
+};
+
+Builtin: Box<Type::Builtin> = {
+	"i8" => Box::new(Type::Builtin(BuiltinType::I8)),
+	"i16" => Box::new(Type::Builtin(BuiltinType::I16)),
+	"i32" => Box::new(Type::Builtin(BuiltinType::I32)),
+	"i64" => Box::new(Type::Builtin(BuiltinType::I64)),
+	"u8" => Box::new(Type::Builtin(BuiltinType::U8)),
+	"u16" => Box::new(Type::Builtin(BuiltinType::U16)),
+	"u32" => Box::new(Type::Builtin(BuiltinType::U32)),
+	"u64" => Box::new(Type::Builtin(BuiltinType::U64)),
+	"f32" => Box::new(Type::Builtin(BuiltinType::F32)),
+	"f64" => Box::new(Type::Builtin(BuiltinType::F64)),
+	"void" => Box::new(Type::Builtin(BuiltinType::Void)),
+	"bln" => Box::new(Type::Builtin(BuiltinType::Bln)),
+	"chr" => Box::new(Type::Builtin(BuiltinType::Chr)),
+	"str" => Box::new(Type::Builtin(BuiltinType::Str)),
+};
+
+Pointer: Box<Type::Pointer> = {
+	"ptr<" <t:Type> ">" => Box::new(Type::Pointer(t))
+};
+
+Generic: Box<Type::Generic> = {
+	"gen<" <t:Type> ">" => Box::new(Type::Generic {
+		name: t,
+		restrictions: None,
+	}),
+	"gen<" <t:Type> ":" (Type)* ">" => Box::new(Type::Generic{
+		name: t,
+		restrictions: <>,
+	}),
+};
+
+Array: Box<Type::Array> = {
+	"[" <t:Type> ";" <e:Expr> "]" => Box::new(Type::Array{
+		ty: t,
+		size: e,
+	}),
+};
+
+ExpTypePair: Box<(String, Type)> = {
+	<Expr> ":" <Type> => Box::new((<>, <>))
+};
+
+Struct: Box<Type::Struct> = {
+	"struct" <name:Expr> "{" (ExpTypePair)* "}" => Box::new(Type::Struct{
+		name: name,
+		fields: <>
+		generics: None,
+	}),
+	"struct" <name:Expr> "<" (ExpTypePair)* ">" "{" (ExpTypePair)* "}" => Box::new(Type::Struct{
+		name: name,
+		fields: <>
+		generics: Some(vec![])
+	}),
+};
+
+Function: Box<Type::Function> = {
+	"fnc" "(" (Type)* ")" ":" <t:Type> => Box::new(Type::Function {
+		args: <>
+		ret: t
+		generics: None,
+	}),
+	"fnc" "<" (Expr)* ">" "(" (Type)* ")" ":" <t:Type> => Box::new(Type::Function {
+		args: <>
+		ret: t
+		generics: Some(vec![])
+	}),
+};
+
+Enum: Box<Type::Enum> = {
+	"enum" <name:Expr> "{" (Expr)* "}" => Box::new(Type::Enum{
+		name: name,
+		variants: <>
+	}),
+};
+
+Union: Box<Type::Union> = {
+	"union" <name:Expr> "{" (ExpTypePair)* "}" => Box::new(Type::Union{
+		name: name,
+		fields: <>
+	}),
+};
