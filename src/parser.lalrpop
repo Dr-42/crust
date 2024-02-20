@@ -87,50 +87,7 @@ Iden: String = {
 	r"[a-zA-Z_][a-zA-Z0-9_]*" => <>.to_string(),
 };
 
-UnaryOp: Box<Expr> = {
-	#[precedence(level="0")]
-	"--" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Dec,
-		expr: expr,
-	}),
-	#[precedence(level="1")]
-	"++" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Inc,
-		expr: expr,
-	}),
-	#[precedence(level="2")]
-	"&" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Ref,
-		expr: expr,
-	}),
-	#[precedence(level="3")]
-	"*" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Deref,
-		expr: expr,
-	}),
-	#[precedence(level="4")]
-	"+" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Pos,
-		expr: expr,
-	}),
-	#[precedence(level="5")]
-	"-" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Neg,
-		expr: expr,
-	}),
-	#[precedence(level="6")]
-	"!" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Not,
-		expr: expr,
-	}),
-	#[precedence(level="7")]
-	"~" <expr:Atom> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::BitNot,
-		expr: expr,
-	}),
-};
-
-BinInp: Box<Expr> = {
+OpInp: Box<Expr> = {
 	#[precedence(level="0")]
 	Atom => <>,
 	#[precedence(level="1")] #[assoc(side="left")]
@@ -139,111 +96,154 @@ BinInp: Box<Expr> = {
 	Bracketed,
 };
 
+UnaryOp: Box<Expr> = {
+	#[precedence(level="0")]
+	"--" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Dec,
+		expr: expr,
+	}),
+	#[precedence(level="1")]
+	"++" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Inc,
+		expr: expr,
+	}),
+	#[precedence(level="2")]
+	"&" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Ref,
+		expr: expr,
+	}),
+	#[precedence(level="3")]
+	"*" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Deref,
+		expr: expr,
+	}),
+	#[precedence(level="4")]
+	"+" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Pos,
+		expr: expr,
+	}),
+	#[precedence(level="5")]
+	"-" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Neg,
+		expr: expr,
+	}),
+	#[precedence(level="6")]
+	"!" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::Not,
+		expr: expr,
+	}),
+	#[precedence(level="7")]
+	"~" <expr:OpInp> => Box::new(Expr::UnaryOp {
+		op: UnaryOp::BitNot,
+		expr: expr,
+	}),
+};
+
 BinaryOp: Box<Expr> = {
 	#[precedence(level="0")]
-	<l:BinInp> "*" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "*" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Mul,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="1")] #[assoc(side="left")]
-	<l:BinInp> "/" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "/" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Div,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="2")] #[assoc(side="left")]
-	<l:BinInp> "%" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "%" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Mod,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="3")] #[assoc(side="left")]
-	<l:BinInp> "+" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "+" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Add,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="4")] #[assoc(side="left")]
-	<l:BinInp> "-" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "-" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Sub,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="5")] #[assoc(side="left")]
-	<l:BinInp> "<<" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "<<" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Shl,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="6")] #[assoc(side="left")]
-	<l:BinInp> ">>" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> ">>" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Shr,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="7")] #[assoc(side="left")]
-	<l:BinInp> "<" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "<" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Lt,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="8")] #[assoc(side="left")]
-	<l:BinInp> "<=" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "<=" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Lte,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="9")] #[assoc(side="left")]
-	<l:BinInp> ">" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> ">" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Gt,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="10")] #[assoc(side="left")]
-	<l:BinInp> ">=" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> ">=" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Gte,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="11")] #[assoc(side="left")]
-	<l:BinInp> "==" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "==" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Eq,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="12")] #[assoc(side="left")]
-	<l:BinInp> "!=" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "!=" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Neq,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="13")] #[assoc(side="left")]
-	<l:BinInp> "&" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "&" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::BitAnd,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="14")] #[assoc(side="left")]
-	<l:BinInp> "^" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "^" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::BitXor,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="15")] #[assoc(side="left")]
-	<l:BinInp> "|" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "|" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::BitOr,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="16")] #[assoc(side="left")]
-	<l:BinInp> "&&" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "&&" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::And,
 		lhs: l,
 		rhs: r,
 	}),
 	#[precedence(level="17")] #[assoc(side="left")]
-	<l:BinInp> "||" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:OpInp> "||" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Or,
 		lhs: l,
 		rhs: r,
