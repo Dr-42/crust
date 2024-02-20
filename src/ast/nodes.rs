@@ -34,7 +34,7 @@ pub enum Type {
     Pointer(Box<Type>),
     UserDefined {
         name: String,
-        generic_args: Option<Vec<String>>,
+        generic_args: Option<Vec<Box<Type>>>,
     },
     Array {
         base: Box<Type>,

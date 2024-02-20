@@ -8,8 +8,10 @@ pub Program: Box<Program> = {
 };
 
 Stmt: Box<Stmt> = {
-	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
+	#[precedence(level="0")]
 	<t:VarDecl> ";" => t,
+	#[precedence(level="1")]
+	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
 };
 
 Atom: Box<Expr> = {
@@ -248,7 +250,14 @@ BuilinType: BuiltinType = {
 };
 
 Pointer: Box<Type> = {
-	"ptr<" <t:Type> ">" "*" => Box::new(Type::Pointer(t)),
+	"ptr" <n:"*"+> <t:Type> => {
+		let nr = n.len();
+		let mut base = t;
+		for _ in 0..nr {
+			base = Box::new(Type::Pointer(base));
+		}
+		base
+	}
 };
 
 Array: Box<Type> = {
@@ -269,7 +278,7 @@ Comma<T>: Vec<T> = {
 };
 
 UserDefined: Box<Type> = {
-	<name:Iden> "<" <args:Comma<Iden>> ">" => Box::new(Type::UserDefined {
+	<name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
 		name: name,
 		generic_args: Some(args),
 	}),
