@@ -234,7 +234,7 @@ Call: Box<Expr> = {
 		args: args,
 		generics: None,
 	}),
-	<name:Iden> "gen<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" => Box::new(Expr::Call {
+	<name:Iden> "::<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" => Box::new(Expr::Call {
 		name: name,
 		args: args,
 		generics: Some(gens),

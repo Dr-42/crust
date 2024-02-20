@@ -128,17 +128,17 @@ pub enum Stmt {
         els: Option<Box<Stmt>>,
     },
     While {
-        cond: Expr,
+        cond: Box<Expr>,
         body: Box<Stmt>,
     },
     For {
-        init: Option<Expr>,
-        cond: Option<Expr>,
-        step: Option<Expr>,
+        init: Option<Box<Stmt>>,
+        cond: Option<Box<Stmt>>,
+        step: Option<Box<Stmt>>,
         body: Box<Stmt>,
     },
     Return(Option<Expr>),
-    Block(Vec<Stmt>),
+    Block(Vec<Box<Stmt>>),
     VarDecl {
         name: String,
         ty: Box<Type>,
