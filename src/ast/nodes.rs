@@ -1,3 +1,9 @@
+pub enum Comment {
+    SingleLine(String),
+    MultiLine(String),
+    Doc(String),
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum BuiltinType {
     I8,
@@ -185,6 +191,15 @@ pub enum Stmt {
     },
     StructMemberAssign {
         name: Box<Expr>,
+        value: Box<Expr>,
+        op: AssignOp,
+    },
+    ArrayAssign {
+        name: String,
+        value: Vec<Box<Expr>>,
+    },
+    ArrayMemberAssign {
+        element: Box<Expr>,
         value: Box<Expr>,
         op: AssignOp,
     },

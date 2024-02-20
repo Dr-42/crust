@@ -21,7 +21,12 @@ struct Vec3 <T:Num + Copy> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let parser = parser::ProgramParser::new();
-    let tree = parser.parse(TEXT_TO_PARSE)?;
+    let text = std::fs::read_to_string("./rule110.syn")?;
+    let tree = parser.parse(&text);
+    if let Err(e) = tree {
+        println!("Error: {:?}", e);
+        return Ok(());
+    }
     println!("{:#?}", tree);
     Ok(())
 }

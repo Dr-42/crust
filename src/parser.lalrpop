@@ -25,6 +25,8 @@ Stmt: Box<Stmt> = {
 	VarAssign,
 	StructAssign,
 	StructMemberAssign,
+	ArrayAssign,
+	ArrayMemberAssign,
 };
 
 Atom: Box<Expr> = {
@@ -616,4 +618,50 @@ StructMemberAssign: Box<Stmt> = {
 		value: val,
 		op: AssignOp::ModAssign,
 	}),
+};
+
+ArrayAssign: Box<Stmt>  = {
+	<name:Iden> "=" "[" <vals:Comma<Expr>> "]" ";" => Box::new(Stmt::ArrayAssign {
+		name: name,
+		value: vals,
+	}),
+};
+
+ArrayMemberAssign: Box<Stmt> = {
+	<name:Index> "=" <value:Expr> ";" => Box::new(Stmt::ArrayMemberAssign {
+		element: name,
+		value: value,
+		op: AssignOp::Assign,
+	}),
+	<name:Index> "+=" <value:Expr> ";" => Box::new(Stmt::ArrayMemberAssign {
+		element: name,
+		value: value,
+		op: AssignOp::AddAssign,
+	}),
+	<name:Index> "-=" <value:Expr> ";" => Box::new(Stmt::ArrayMemberAssign {
+		element: name,
+		value: value,
+		op: AssignOp::SubAssign,
+	}),
+	<name:Index> "*=" <value:Expr> ";" => Box::new(Stmt::ArrayMemberAssign {
+		element: name,
+		value: value,
+		op: AssignOp::MulAssign,
+	}),
+	<name:Index> "/=" <value:Expr> ";" => Box::new(Stmt::ArrayMemberAssign {
+		element: name,
+		value: value,
+		op: AssignOp::DivAssign,
+	}),
+	<name:Index> "%=" <value:Expr> ";" => Box::new(Stmt::ArrayMemberAssign {
+		element: name,
+		value: value,
+		op: AssignOp::ModAssign,
+	}),
+};
+
+Comment: () = {
+	r"//.*\n" => (),
+	r"/\*.*\*/" => (),
+	r"/!.*\n" => (),
 };
