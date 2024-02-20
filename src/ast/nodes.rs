@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BuiltinType {
     I8,
     I16,
@@ -16,7 +16,7 @@ pub enum BuiltinType {
     Str,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct GenericType {
     pub name: String,
     pub constraints: Option<Vec<Box<Type>>>,
@@ -28,7 +28,7 @@ impl GenericType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
@@ -76,7 +76,7 @@ pub enum BinaryOp {
     Or,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum AssignOp {
     Assign,
     AddAssign,
@@ -86,7 +86,7 @@ pub enum AssignOp {
     ModAssign,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expr {
     Numeric(i64),
     Strng(String),
@@ -118,7 +118,7 @@ pub enum Expr {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Stmt {
     Expr(Box<Expr>),
     If {
@@ -191,7 +191,7 @@ pub enum Stmt {
     Continue,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Program {
     pub stmts: Vec<Box<Stmt>>,
 }

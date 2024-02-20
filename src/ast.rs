@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 pub mod nodes;
+pub mod test;
 
 #[derive(Debug)]
 pub enum Expr {
