@@ -116,10 +116,6 @@ pub enum Expr {
         name: Box<Expr>,
         member: Box<Expr>,
     },
-    Cast {
-        expr: Box<Expr>,
-        to: Type,
-    },
 }
 
 #[derive(Debug)]
