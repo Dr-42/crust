@@ -174,7 +174,7 @@ pub enum Stmt {
     },
     VarAssign {
         name: String,
-        value: Expr,
+        value: Box<Expr>,
         op: AssignOp,
     },
     StructAssign {
