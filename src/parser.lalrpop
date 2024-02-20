@@ -20,6 +20,8 @@ Stmt: Box<Stmt> = {
 	Continue,
 	Break,
 	StructDecl,
+	FunctionDecl,
+	TraitDecl,
 };
 
 Atom: Box<Expr> = {
@@ -457,5 +459,30 @@ StructDecl: Box<Stmt> = {
 		name: name,
 		fields: fields,
 		generics: Some(gens),
+	}),
+};
+
+FunctionDecl: Box<Stmt> = {
+	"fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> => Box::new(Stmt::FunctionDecl {
+		name: name,
+		args: args,
+		ret: ret,
+		body: body,
+		generics: None,
+	}),
+	"fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> => Box::new(Stmt::FunctionDecl {
+		name: name,
+		args: args,
+		ret: ret,
+		body: body,
+		generics: Some(gens),
+	}),
+};
+
+TraitDecl: Box<Stmt> = {
+	"trait" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" => Box::new(Stmt::TraitDecl {
+		name: name,
+		for_ty: ty,
+		methods: methods,
 	}),
 };

@@ -167,10 +167,10 @@ pub enum Stmt {
     },
     FunctionDecl {
         name: String,
-        args: Vec<(String, Type)>,
-        ret: Type,
+        args: Vec<Box<Stmt>>,
+        ret: Box<Type>,
         body: Box<Stmt>,
-        generics: Option<Vec<GenericType>>,
+        generics: Option<Vec<Box<GenericType>>>,
     },
     VarAssign {
         name: String,
