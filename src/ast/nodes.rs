@@ -110,11 +110,11 @@ pub enum Expr {
     },
     Index {
         name: String,
-        index: Box<Expr>,
+        indices: Vec<Box<Expr>>,
     },
     MemberAccess {
-        name: String,
-        member: String,
+        name: Box<Expr>,
+        member: Box<Expr>,
     },
     Cast {
         expr: Box<Expr>,

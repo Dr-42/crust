@@ -21,6 +21,9 @@ Atom: Box<Expr> = {
 	Chr => Box::new(Expr::Chr(<>)),
 	Bln => Box::new(Expr::Bln(<>)),
 	Iden => Box::new(Expr::Iden(<>)),
+	Index,
+	Call,
+	MemberAccess,
 };
 
 Expr: Box<Expr> = {
@@ -31,7 +34,6 @@ Expr: Box<Expr> = {
 	UnaryOp,
 	#[precedence(level="2")] #[assoc(side="left")]
 	BinaryOp,
-	Call,
 };
 
 Numeric: i64 = {
@@ -237,6 +239,38 @@ Call: Box<Expr> = {
 		args: args,
 		generics: Some(gens),
 	}),
+};
+
+Index: Box<Expr> = {
+	<name:Iden> <v:("[" <Expr> "]")+> => Box::new(Expr::Index {
+		name: name,
+		indices: v
+	}),
+};
+
+MemAccessOperands: Box<Expr> = {
+    #[precedence(level="0")]
+	Numeric => Box::new(Expr::Numeric(<>)),
+	Strng => Box::new(Expr::Strng(<>)),
+	Flt => Box::new(Expr::Flt(<>)),
+	Chr => Box::new(Expr::Chr(<>)),
+	Bln => Box::new(Expr::Bln(<>)),
+	Iden => Box::new(Expr::Iden(<>)),
+	Index,
+	Call,
+};
+
+MemberAccess: Box<Expr> = {
+	<name:MemAccessOperands> <v:("." <MemAccessOperands>)+> => {
+		let mut base = name;
+		for m in v {
+			base = Box::new(Expr::MemberAccess {
+				name: base,
+				member: m,
+			});
+		}
+		base
+	},
 };
 
 Type: Box<Type> = {
