@@ -12,6 +12,8 @@ Stmt: Box<Stmt> = {
 	<t:VarDecl> ";" => t,
 	#[precedence(level="1")]
 	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
+	While,
+	Block,
 };
 
 Atom: Box<Expr> = {
@@ -346,5 +348,16 @@ VarDecl: Box<Stmt> = {
 		name: name,
 		ty: t,
 		value: None,
+	}),
+};
+
+Block: Box<Stmt> = {
+	"{" <stmts:Stmt*> "}" => Box::new(Stmt::Block(stmts)),
+};
+
+While: Box<Stmt> = {
+	"while" "(" <cond:Expr> ")" <body:Stmt> => Box::new(Stmt::While {
+		cond: cond,
+		body: body,
 	}),
 };
