@@ -169,8 +169,9 @@ pub enum Stmt {
         name: String,
         args: Vec<Box<Stmt>>,
         ret: Box<Type>,
-        body: Box<Stmt>,
+        body: Option<Box<Stmt>>,
         generics: Option<Vec<Box<GenericType>>>,
+        isvararg: bool,
     },
     VarAssign {
         name: String,
