@@ -42,6 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let mut out_path = std::path::PathBuf::from("outs");
                     out_path.push(path.file_name().unwrap());
                     std::fs::write(out_path.with_extension("ast"), format!("{:#?}", program))?;
+                    println!("Pass: {:?}", path);
                 }
                 Err(e) => {
                     eprintln!("Error parsing file: {:?}", path);

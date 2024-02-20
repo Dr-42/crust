@@ -23,6 +23,7 @@ Stmt: Box<Stmt> = {
 	FunctionDecl,
 	TraitDecl,
 	VarAssign,
+	DerefAssign,
 	StructAssign,
 	StructMemberAssign,
 	ArrayAssign,
@@ -577,6 +578,39 @@ VarAssign: Box<Stmt> = {
 	<name:Iden> "%=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
+		op: AssignOp::ModAssign,
+	}),
+};
+
+DerefAssign: Box<Stmt> = {
+	<val:UnaryOp> "=" <expr:Expr> ";" => Box::new(Stmt::DerefAssign {
+		value: val,
+		expr: expr,
+		op: AssignOp::Assign,
+	}),
+	<val:UnaryOp> "+=" <expr:Expr> ";" => Box::new(Stmt::DerefAssign {
+		value: val,
+		expr: expr,
+		op: AssignOp::AddAssign,
+	}),
+	<val:UnaryOp> "-=" <expr:Expr> ";" => Box::new(Stmt::DerefAssign {
+		value: val,
+		expr: expr,
+		op: AssignOp::SubAssign,
+	}),
+	<val:UnaryOp> "*=" <expr:Expr> ";" => Box::new(Stmt::DerefAssign {
+		value: val,
+		expr: expr,
+		op: AssignOp::MulAssign,
+	}),
+	<val:UnaryOp> "/=" <expr:Expr> ";" => Box::new(Stmt::DerefAssign {
+		value: val,
+		expr: expr,
+		op: AssignOp::DivAssign,
+	}),
+	<val:UnaryOp> "%=" <expr:Expr> ";" => Box::new(Stmt::DerefAssign {
+		value: val,
+		expr: expr,
 		op: AssignOp::ModAssign,
 	}),
 };

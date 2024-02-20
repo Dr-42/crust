@@ -184,6 +184,11 @@ pub enum Stmt {
         value: Box<Expr>,
         op: AssignOp,
     },
+    DerefAssign {
+        value: Box<Expr>,
+        expr: Box<Expr>,
+        op: AssignOp,
+    },
     StructAssign {
         name: String,
         sname: String,
