@@ -122,9 +122,8 @@ pub enum Expr {
 pub enum Stmt {
     Expr(Box<Expr>),
     If {
-        cond: Expr,
-        then: Box<Stmt>,
-        elifs: Vec<(Expr, Box<Stmt>)>,
+        cond: Box<Expr>,
+        body: Box<Stmt>,
         els: Option<Box<Stmt>>,
     },
     While {
@@ -137,7 +136,7 @@ pub enum Stmt {
         step: Box<Stmt>,
         body: Box<Stmt>,
     },
-    Return(Option<Expr>),
+    Return(Option<Box<Expr>>),
     Block(Vec<Box<Stmt>>),
     VarDecl {
         name: String,

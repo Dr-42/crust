@@ -15,6 +15,10 @@ Stmt: Box<Stmt> = {
 	While,
 	Block,
 	For,
+	If,
+	Return,
+	Continue,
+	Break,
 };
 
 Atom: Box<Expr> = {
@@ -388,4 +392,37 @@ For: Box<Stmt> = {
 		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric(1)))),
 		body: body,
 	}),
+};
+
+ValidIfTail: Box<Stmt> = {
+	Block,
+	<Expr> ";" => Box::new(Stmt::Expr(<>)),
+	Return,
+	Continue,
+	Break,
+};
+
+If : Box<Stmt> = {
+	"if" "(" <cond:Expr> ")" <body:ValidIfTail> => Box::new(Stmt::If {
+		cond: cond,
+		body: body,
+		els: None,
+	}),
+	"if" "(" <cond:Expr> ")" <body:ValidIfTail> "else" <else_body:Stmt> => Box::new(Stmt::If {
+		cond: cond,
+		body: body,
+		els: Some(else_body),
+	}),
+};
+
+Return: Box<Stmt> = {
+	"ret" <val:Expr?> ";" => Box::new(Stmt::Return(val)),
+};
+
+Continue: Box<Stmt> = {
+	"cont" ";" => Box::new(Stmt::Continue),
+};
+
+Break: Box<Stmt> = {
+	"brk" ";" => Box::new(Stmt::Break),
 };
