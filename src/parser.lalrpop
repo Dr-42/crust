@@ -41,9 +41,13 @@ Atom: Box<Expr> = {
 	MemberAccess,
 };
 
+Bracketed : Box<Expr> = {
+	"(" <t:Expr> ")" => t,
+};
+
 Expr: Box<Expr> = {
 	#[precedence(level="0")]
-	"(" <t:Expr> ")" => t,
+	Bracketed => <>,
 	Atom => <>,
 	#[precedence(level="1")] #[assoc(side="left")]
 	UnaryOp,
@@ -130,6 +134,8 @@ BinInp: Box<Expr> = {
 	Atom => <>,
 	#[precedence(level="1")] #[assoc(side="left")]
 	UnaryOp,
+	#[precedence(level="2")] #[assoc(side="left")]
+	Bracketed,
 };
 
 BinaryOp: Box<Expr> = {
@@ -658,10 +664,4 @@ ArrayMemberAssign: Box<Stmt> = {
 		value: value,
 		op: AssignOp::ModAssign,
 	}),
-};
-
-Comment: () = {
-	r"//.*\n" => (),
-	r"/\*.*\*/" => (),
-	r"/!.*\n" => (),
 };

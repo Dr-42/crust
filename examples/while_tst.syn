@@ -1,0 +1,11 @@
+fnc print(a : str, ...) : void;
+fnc get_num() : i32;
+
+fnc main() : i32 {
+	i : i32 = 10;
+	while (i > 0) {
+		print("i = ", i);
+		i -= i;
+	}
+	ret 0;
+}

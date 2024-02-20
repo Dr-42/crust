@@ -6,27 +6,49 @@ pub mod ast;
 
 lalrpop_mod!(pub parser);
 
-const TEXT_TO_PARSE: &str = r#"
-d : i32 = a[3][x + 1] + b[3] * 2;
-f : i32;
-mamba : snake<str, i32, ptr** animal> = snake_new::<str, i32, ptr** animal>("Rattle", 5, parent);
-mozart : artist<musician> = d.loper.mamba;
-mozart.play("Symphony No. 40 in G minor, K. 550");
-struct Vec3 <T:Num + Copy> {
-    x: T,
-    y: T,
-    z: T,
+/*
+fn main() -> Result<(), Box<dyn Error>> {
+    let file = std::env::args().nth(1).expect("No file provided");
+    let text = std::fs::read_to_string(&file)?;
+    let text = ast::preremove_comments(&text);
+    let program = parser::ProgramParser::new().parse(&text);
+    match program {
+        Ok(program) => {
+            println!("{:#?}", program);
+        }
+        Err(e) => {
+            eprintln!("Error parsing file: {:?}", file);
+            eprintln!("{:?}", e);
+        }
+    }
+    Ok(())
 }
-"#;
+*/
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let parser = parser::ProgramParser::new();
-    let text = std::fs::read_to_string("./rule110.syn")?;
-    let tree = parser.parse(&text);
-    if let Err(e) = tree {
-        println!("Error: {:?}", e);
-        return Ok(());
+    for file in std::fs::read_dir("examples")? {
+        let file = file?;
+        let path = file.path();
+        if path.is_file() {
+            let text = std::fs::read_to_string(&path)?;
+            let text = ast::preremove_comments(&text);
+            let program = parser::ProgramParser::new().parse(&text);
+            match program {
+                Ok(program) => {
+                    // Output path outs/FILENAME.ast
+                    if !std::path::Path::new("outs").exists() {
+                        std::fs::create_dir("outs")?;
+                    }
+                    let mut out_path = std::path::PathBuf::from("outs");
+                    out_path.push(path.file_name().unwrap());
+                    std::fs::write(out_path.with_extension("ast"), format!("{:#?}", program))?;
+                }
+                Err(e) => {
+                    eprintln!("Error parsing file: {:?}", path);
+                    eprintln!("{:?}", e);
+                }
+            }
+        }
     }
-    println!("{:#?}", tree);
     Ok(())
 }

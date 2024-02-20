@@ -1,0 +1,7 @@
+fnc main() : i32 {
+	// The main file
+	if ((a % 2) == 0) {
+		ret 0;
+	}
+	ret 0;
+}
