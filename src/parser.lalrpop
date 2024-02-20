@@ -22,6 +22,7 @@ Stmt: Box<Stmt> = {
 	StructDecl,
 	FunctionDecl,
 	TraitDecl,
+	VarAssign,
 };
 
 Atom: Box<Expr> = {
@@ -488,32 +489,32 @@ TraitDecl: Box<Stmt> = {
 };
 
 VarAssign: Box<Stmt> = {
-	<name:Iden> "=" <val:Expr> => Box::new(Stmt::VarAssign {
+	<name:Iden> "=" <val:Expr> ";"=> Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
 		op: AssignOp::Assign,
 	}),
-	<name:Iden> "+=" <val:Expr> => Box::new(Stmt::VarAssign {
+	<name:Iden> "+=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
 		op: AssignOp::AddAssign,
 	}),
-	<name:Iden> "-=" <val:Expr> => Box::new(Stmt::VarAssign {
+	<name:Iden> "-=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
 		op: AssignOp::SubAssign,
 	}),
-	<name:Iden> "*=" <val:Expr> => Box::new(Stmt::VarAssign {
+	<name:Iden> "*=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
 		op: AssignOp::MulAssign,
 	}),
-	<name:Iden> "/=" <val:Expr> => Box::new(Stmt::VarAssign {
+	<name:Iden> "/=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
 		op: AssignOp::DivAssign,
 	}),
-	<name:Iden> "%=" <val:Expr> => Box::new(Stmt::VarAssign {
+	<name:Iden> "%=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
 		name: name,
 		value: val,
 		op: AssignOp::ModAssign,
