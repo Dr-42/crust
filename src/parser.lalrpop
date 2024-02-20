@@ -14,6 +14,7 @@ Stmt: Box<Stmt> = {
 	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
 	While,
 	Block,
+	For,
 };
 
 Atom: Box<Expr> = {
@@ -358,6 +359,33 @@ Block: Box<Stmt> = {
 While: Box<Stmt> = {
 	"while" "(" <cond:Expr> ")" <body:Stmt> => Box::new(Stmt::While {
 		cond: cond,
+		body: body,
+	}),
+};
+
+For: Box<Stmt> = {
+	"for" "(" <init:Stmt> <cond:Expr> ";" <step:Stmt> ")" <body:Stmt> => Box::new(Stmt::For {
+		init: init,
+		cond: cond,
+		step: step,
+		body: body,
+	}),
+	"for" "(" <init:Stmt> <cond:Expr> ")" <body:Stmt> => Box::new(Stmt::For {
+		init: init,
+		cond: cond,
+		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric(1)))),
+		body: body,
+	}),
+	"for" "(" <init:Stmt> ";" <step:Stmt> ")" <body:Stmt> => Box::new(Stmt::For {
+		init: init,
+		cond: Box::new(Expr::Bln(true)),
+		step: step,
+		body: body,
+	}),
+	"for" "(" <init:Stmt> ")" <body:Stmt> => Box::new(Stmt::For {
+		init: init,
+		cond: Box::new(Expr::Bln(true)),
+		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric(1)))),
 		body: body,
 	}),
 };

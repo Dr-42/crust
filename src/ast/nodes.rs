@@ -132,9 +132,9 @@ pub enum Stmt {
         body: Box<Stmt>,
     },
     For {
-        init: Option<Box<Stmt>>,
-        cond: Option<Box<Stmt>>,
-        step: Option<Box<Stmt>>,
+        init: Box<Stmt>,
+        cond: Box<Expr>,
+        step: Box<Stmt>,
         body: Box<Stmt>,
     },
     Return(Option<Expr>),
