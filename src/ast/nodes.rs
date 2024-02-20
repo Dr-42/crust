@@ -1,5 +1,5 @@
 #[derive(Debug)]
-pub enum BuilinType {
+pub enum BuiltinType {
     I8,
     I16,
     I32,
@@ -30,11 +30,11 @@ impl GenericType {
 
 #[derive(Debug)]
 pub enum Type {
-    Builtin(BuilinType),
+    Builtin(BuiltinType),
     Pointer(Box<Type>),
     UserDefined {
         name: String,
-        generic_args: Option<Vec<Box<GenericType>>>,
+        generic_args: Option<Vec<String>>,
     },
     Array {
         base: Box<Type>,

@@ -8,11 +8,12 @@ pub Program: Box<Program> = {
 };
 
 Stmt: Box<Stmt> = {
-    <t:Expr> ";" => Box::new(Stmt::Expr(t)),
+	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
+	<t:VarDecl> ";" => t,
 };
 
 Atom: Box<Expr> = {
-    Numeric => Box::new(Expr::Numeric(<>)),
+	Numeric => Box::new(Expr::Numeric(<>)),
 	Strng => Box::new(Expr::Strng(<>)),
 	Flt => Box::new(Expr::Flt(<>)),
 	Chr => Box::new(Expr::Chr(<>)),
@@ -22,7 +23,7 @@ Atom: Box<Expr> = {
 
 Expr: Box<Expr> = {
 	#[precedence(level="0")]
-    "(" <t:Expr> ")" => t,
+	"(" <t:Expr> ")" => t,
 	Atom => <>,
 	#[precedence(level="1")] #[assoc(side="left")]
 	UnaryOp,
@@ -105,15 +106,15 @@ UnaryOp: Box<Expr> = {
 };
 
 BinInp: Box<Expr> = {
-   #[precedence(level="0")]
-   Atom => <>,
-   #[precedence(level="1")] #[assoc(side="left")]
-   UnaryOp,
+	#[precedence(level="0")]
+	Atom => <>,
+	#[precedence(level="1")] #[assoc(side="left")]
+	UnaryOp,
 };
 
 BinaryOp: Box<Expr> = {
 	#[precedence(level="0")]
-    <l:BinInp> "*" <r:Expr> => Box::new(Expr::BinaryOp {
+	<l:BinInp> "*" <r:Expr> => Box::new(Expr::BinaryOp {
 		op: BinaryOp::Mul,
 		lhs: l,
 		rhs: r,
@@ -219,5 +220,74 @@ BinaryOp: Box<Expr> = {
 		op: BinaryOp::Or,
 		lhs: l,
 		rhs: r,
+	}),
+};
+
+Type: Box<Type> = {
+	BuilinType => Box::new(Type::Builtin(<>)),
+	Pointer => <>,
+	UserDefined => <>,
+	Array => <>,
+};
+
+BuilinType: BuiltinType = {
+	"i8" => BuiltinType::I8,
+	"i16" => BuiltinType::I16,
+	"i32" => BuiltinType::I32,
+	"i64" => BuiltinType::I64,
+	"u8" => BuiltinType::U8,
+	"u16" => BuiltinType::U16,
+	"u32" => BuiltinType::U32,
+	"u64" => BuiltinType::U64,
+	"f32" => BuiltinType::F32,
+	"f64" => BuiltinType::F64,
+	"void" => BuiltinType::Void,
+	"chr" => BuiltinType::Chr,
+	"bln" => BuiltinType::Bln,
+	"str" => BuiltinType::Str,
+};
+
+Pointer: Box<Type> = {
+	"ptr<" <t:Type> ">" "*" => Box::new(Type::Pointer(t)),
+};
+
+Array: Box<Type> = {
+	"[" <t:Type> ";" <s:r"[0-9]+"> "]" => Box::new(Type::Array {
+		base: t,
+		length: s.parse().unwrap(),
+	}),
+};
+
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+UserDefined: Box<Type> = {
+	<name:Iden> "<" <args:Comma<Iden>> ">" => Box::new(Type::UserDefined {
+		name: name,
+		generic_args: Some(args),
+	}),
+	<name:Iden> => Box::new(Type::UserDefined {
+		name: name,
+		generic_args: None,
+	}),
+};
+
+VarDecl: Box<Stmt> = {
+	<name:Iden> ":" <t:Type> "=" <val:Expr> => Box::new(Stmt::VarDecl {
+		name: name,
+		ty: t,
+		value: Some(val),
+	}),
+	<name:Iden> ":" <t:Type> => Box::new(Stmt::VarDecl {
+		name: name,
+		ty: t,
+		value: None,
 	}),
 };
