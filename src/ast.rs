@@ -1,5 +1,8 @@
 pub mod nodes;
+pub mod semantics;
 pub mod test;
+
+pub type Span = codespan::Span;
 
 pub fn preremove_comments(text: &str) -> String {
     let mut result = String::new();

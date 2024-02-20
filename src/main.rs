@@ -35,6 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let program = parser::ProgramParser::new().parse(&text);
             match program {
                 Ok(program) => {
+                    //let program = ast::semantics::infer(*program)?;
                     // Output path outs/FILENAME.ast
                     if !std::path::Path::new("outs").exists() {
                         std::fs::create_dir("outs")?;

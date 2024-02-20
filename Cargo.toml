@@ -8,4 +8,5 @@ edition = "2021"
 lalrpop = "0.20.0"
 
 [dependencies]
+codespan = "0.11.1"
 lalrpop-util = { version = "0.20.0", features = ["lexer", "unicode"]}

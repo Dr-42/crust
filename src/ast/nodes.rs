@@ -1,3 +1,5 @@
+use super::Span;
+
 pub enum Comment {
     SingleLine(String),
     MultiLine(String),
@@ -94,12 +96,30 @@ pub enum AssignOp {
 
 #[derive(Debug, PartialEq)]
 pub enum Expr {
-    Numeric(i64),
-    Strng(String),
-    Flt(f64),
-    Chr(char),
-    Bln(bool),
-    Iden(String),
+    Numeric {
+        val: i64,
+        span: Span,
+    },
+    Strng {
+        val: String,
+        span: Span,
+    },
+    Flt {
+        val: f64,
+        span: Span,
+    },
+    Chr {
+        val: char,
+        span: Span,
+    },
+    Bln {
+        val: bool,
+        span: Span,
+    },
+    Iden {
+        val: String,
+        span: Span,
+    },
     UnaryOp {
         op: UnaryOp,
         expr: Box<Expr>,

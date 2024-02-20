@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use crate::ast::nodes::*;
+use crate::ast::Span;
 
 grammar;
 
@@ -31,12 +32,15 @@ Stmt: Box<Stmt> = {
 };
 
 Atom: Box<Expr> = {
-	Numeric => Box::new(Expr::Numeric(<>)),
-	Strng => Box::new(Expr::Strng(<>)),
-	Flt => Box::new(Expr::Flt(<>)),
-	Chr => Box::new(Expr::Chr(<>)),
-	Bln => Box::new(Expr::Bln(<>)),
-	Iden => Box::new(Expr::Iden(<>)),
+	Numeric,
+	Strng,
+	Flt,
+	Chr,
+	Bln,
+	<l:@L> <val:Iden> <r:@R> => Box::new(Expr::Iden{
+		val: val,
+		span: Span::new(l as u32, r as u32),
+	}),
 	Index,
 	Call,
 	MemberAccess,
@@ -56,35 +60,54 @@ Expr: Box<Expr> = {
 	BinaryOp,
 };
 
-Numeric: i64 = {
-	r"[0-9]+" => FromStr::from_str(<>).unwrap(),
+Numeric: Box<Expr> = {
+	<l:@L> <val:r"[0-9]+"> <r:@R> => Box::new(Expr::Numeric {
+		val: FromStr::from_str(val).unwrap(),
+		span: Span::new(l as u32, r as u32),
+	}),
 };
 
-Strng: String = {
-	r#""[^"]*""# => {
-		let s = <>.to_string();
-		s[1..s.len()-1].to_string()
+Strng: Box<Expr> = {
+	<l:@L> <val:r#""[^"]*""#> <r:@R> => {
+		let s = val.to_string();
+		let s = s[1..s.len()-1].to_string();
+		Box::new(Expr::Strng {
+			val: s,
+			span: Span::new(l as u32, r as u32),
+		})
 	},
 };
 
-Flt: f64 = {
-	r"[0-9]+\.[0-9]+" => FromStr::from_str(<>).unwrap(),
-};
-
-Chr: char = {
-	r"'.'" => {
-		let s = <>.to_string();
-		s.chars().nth(1).unwrap()
+Flt: Box<Expr> = {
+	<l:@L> <val:r"[0-9]+\.[0-9]+"> <r:@R> => {
+		let val = FromStr::from_str(val).unwrap();
+		Box::new(Expr::Flt {
+			val: val,
+			span: Span::new(l as u32, r as u32),
+		})
 	},
 };
 
-Bln: bool = {
-	"true" => true,
-	"false" => false,
+Chr: Box<Expr> = {
+	<l:@L> <val:r"'.'"> <r:@R> => Box::new(Expr::Chr {
+		val: val.chars().nth(1).unwrap(),
+		span: Span::new(l as u32, r as u32),
+	}),
+};
+
+Bln: Box<Expr> = {
+	"true" => Box::new(Expr::Bln{
+		val: true,
+		span: Span::new(0, 4),
+	}),
+	"false" => Box::new(Expr::Bln{
+		val: false,
+		span: Span::new(0, 5),
+	}),
 };
 
 Iden: String = {
-	r"[a-zA-Z_][a-zA-Z0-9_]*" => <>.to_string(),
+	<l:@L> <val:r"[a-zA-Z_][a-zA-Z0-9_]*"> <r:@L> => val.to_string(),
 };
 
 OpInp: Box<Expr> = {
@@ -272,12 +295,15 @@ Index: Box<Expr> = {
 
 MemAccessOperands: Box<Expr> = {
     #[precedence(level="0")]
-	Numeric => Box::new(Expr::Numeric(<>)),
-	Strng => Box::new(Expr::Strng(<>)),
-	Flt => Box::new(Expr::Flt(<>)),
-	Chr => Box::new(Expr::Chr(<>)),
-	Bln => Box::new(Expr::Bln(<>)),
-	Iden => Box::new(Expr::Iden(<>)),
+	Numeric,
+	Strng,
+	Flt,
+	Chr,
+	Bln,
+	<l:@L> <val:Iden> <r:@R> => Box::new(Expr::Iden{
+		val: val,
+		span: Span::new(l as u32, r as u32),
+	}),
 	Index,
 	Call,
 };
@@ -392,19 +418,31 @@ For: Box<Stmt> = {
 	"for" "(" <init:Stmt> <cond:Expr> ")" <body:Stmt> => Box::new(Stmt::For {
 		init: init,
 		cond: cond,
-		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric(1)))),
+		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
+			val: 1,
+			span: Span::new(0, 0),
+		}))),
 		body: body,
 	}),
 	"for" "(" <init:Stmt> ";" <step:Stmt> ")" <body:Stmt> => Box::new(Stmt::For {
 		init: init,
-		cond: Box::new(Expr::Bln(true)),
+		cond: Box::new(Expr::Bln{
+			val: true,
+			span: Span::new(0, 0),
+		}),
 		step: step,
 		body: body,
 	}),
 	"for" "(" <init:Stmt> ")" <body:Stmt> => Box::new(Stmt::For {
 		init: init,
-		cond: Box::new(Expr::Bln(true)),
-		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric(1)))),
+		cond: Box::new(Expr::Bln{
+			val: true,
+			span: Span::new(0, 0),
+		}),
+		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
+			val: 1,
+			span: Span::new(0, 0),
+		}))),
 		body: body,
 	}),
 };
