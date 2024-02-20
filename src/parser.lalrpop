@@ -19,6 +19,7 @@ Stmt: Box<Stmt> = {
 	Return,
 	Continue,
 	Break,
+	StructDecl,
 };
 
 Atom: Box<Expr> = {
@@ -425,4 +426,36 @@ Continue: Box<Stmt> = {
 
 Break: Box<Stmt> = {
 	"brk" ";" => Box::new(Stmt::Break),
+};
+
+Plud<T>: Vec<T> = {
+	<mut v:(<T> "+")*> <e:T?> => match e { // (2)
+		None => v,
+		Some(e) => {
+			v.push(e);
+			v
+		}
+	}
+};
+
+GenericType: Box<GenericType> = {
+	<name:Iden> => Box::new(GenericType::new(name, None)),
+	<name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
+};
+
+GenricDecl: Vec<Box<GenericType>> = {
+    <Comma<GenericType>> => <>
+};
+
+StructDecl: Box<Stmt> = {
+	"struct" <name:Iden> "{" <fields:Comma<VarDecl>> "}" => Box::new(Stmt::StructDecl {
+		name: name,
+		fields: fields,
+		generics: None,
+	}),
+	"struct" <name:Iden> "<" <gens:GenricDecl> ">" "{" <fields:Comma<VarDecl>> "}" => Box::new(Stmt::StructDecl {
+		name: name,
+		fields: fields,
+		generics: Some(gens),
+	}),
 };

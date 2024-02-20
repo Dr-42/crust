@@ -145,8 +145,8 @@ pub enum Stmt {
     },
     StructDecl {
         name: String,
-        fields: Vec<(String, Type)>,
-        generics: Option<Vec<GenericType>>,
+        fields: Vec<Box<Stmt>>,
+        generics: Option<Vec<Box<GenericType>>>,
     },
     ImplDecl {
         ty: Type,
