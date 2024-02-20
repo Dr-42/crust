@@ -179,19 +179,13 @@ pub enum Stmt {
     },
     StructAssign {
         name: String,
-        field: String,
-        value: Expr,
+        sname: String,
+        fields: Vec<(String, Box<Stmt>)>,
     },
     StructMemberAssign {
-        name: String,
-        member: String,
-        value: Expr,
+        name: Box<Expr>,
+        value: Box<Expr>,
         op: AssignOp,
-    },
-    UnionAssign {
-        name: String,
-        field: String,
-        value: Expr,
     },
     Break,
     Continue,

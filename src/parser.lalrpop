@@ -23,6 +23,8 @@ Stmt: Box<Stmt> = {
 	FunctionDecl,
 	TraitDecl,
 	VarAssign,
+	StructAssign,
+	StructMemberAssign,
 };
 
 Atom: Box<Expr> = {
@@ -515,6 +517,51 @@ VarAssign: Box<Stmt> = {
 		op: AssignOp::DivAssign,
 	}),
 	<name:Iden> "%=" <val:Expr> ";" => Box::new(Stmt::VarAssign {
+		name: name,
+		value: val,
+		op: AssignOp::ModAssign,
+	}),
+};
+
+NameVal: (String, Box<Stmt>) = {
+	<name:Iden> "=" <val:Stmt> => (name, val),
+};
+
+StructAssign: Box<Stmt> = {
+	<name:Iden> "=" <sname:Iden> "{" <fields:Comma<NameVal>> "}" ";" => Box::new(Stmt::StructAssign {
+		name: name,
+		sname: sname,
+		fields: fields,
+	}),
+};
+
+StructMemberAssign: Box<Stmt> = {
+	<name:MemberAccess> "=" <val:Expr> ";" => Box::new(Stmt::StructMemberAssign {
+		name: name,
+		value: val,
+		op: AssignOp::Assign,
+	}),
+	<name:MemberAccess> "+=" <val:Expr> ";" => Box::new(Stmt::StructMemberAssign {
+		name: name,
+		value: val,
+		op: AssignOp::AddAssign,
+	}),
+	<name:MemberAccess> "-=" <val:Expr> ";" => Box::new(Stmt::StructMemberAssign {
+		name: name,
+		value: val,
+		op: AssignOp::SubAssign,
+	}),
+	<name:MemberAccess> "*=" <val:Expr> ";" => Box::new(Stmt::StructMemberAssign {
+		name: name,
+		value: val,
+		op: AssignOp::MulAssign,
+	}),
+	<name:MemberAccess> "/=" <val:Expr> ";" => Box::new(Stmt::StructMemberAssign {
+		name: name,
+		value: val,
+		op: AssignOp::DivAssign,
+	}),
+	<name:MemberAccess> "%=" <val:Expr> ";" => Box::new(Stmt::StructMemberAssign {
 		name: name,
 		value: val,
 		op: AssignOp::ModAssign,
