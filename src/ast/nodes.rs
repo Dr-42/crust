@@ -17,34 +17,28 @@ pub enum BuilinType {
 }
 
 #[derive(Debug)]
+pub struct GenericType {
+    pub name: String,
+    pub constraints: Option<Vec<Box<Type>>>,
+}
+
+impl GenericType {
+    pub fn new(name: String, constraints: Option<Vec<Box<Type>>>) -> Self {
+        Self { name, constraints }
+    }
+}
+
+#[derive(Debug)]
 pub enum Type {
     Builtin(BuilinType),
     Pointer(Box<Type>),
-    Generic {
+    UserDefined {
         name: String,
-        restrictions: Option<Vec<Type>>,
+        generic_args: Option<Vec<Box<GenericType>>>,
     },
     Array {
         base: Box<Type>,
         length: usize,
-    },
-    Struct {
-        name: String,
-        fields: Vec<(String, Type)>,
-        generics: Vec<Type>,
-    },
-    Function {
-        args: Vec<Type>,
-        generics: Option<Vec<Type>>,
-        ret: Box<Type>,
-    },
-    Enum {
-        name: String,
-        variants: Vec<String>,
-    },
-    Union {
-        name: String,
-        fields: Vec<(String, Type)>,
     },
 }
 
@@ -99,7 +93,7 @@ pub enum Expr {
     Flt(f64),
     Chr(char),
     Bln(bool),
-    Var(String),
+    Iden(String),
     UnaryOp {
         op: UnaryOp,
         expr: Box<Expr>,
@@ -151,17 +145,22 @@ pub enum Stmt {
     Block(Vec<Stmt>),
     VarDecl {
         name: String,
-        ty: Type,
-        value: Option<Expr>,
+        ty: Box<Type>,
+        value: Option<Box<Expr>>,
     },
     StructDecl {
         name: String,
         fields: Vec<(String, Type)>,
-        generics: Option<Vec<Type>>,
+        generics: Option<Vec<GenericType>>,
     },
     ImplDecl {
         ty: Type,
-        methods: Vec<Stmt>,
+        methods: Vec<Box<Stmt>>,
+    },
+    TraitDecl {
+        name: String,
+        for_ty: Box<Type>,
+        methods: Vec<Box<Stmt>>,
     },
     EnumDecl {
         name: String,

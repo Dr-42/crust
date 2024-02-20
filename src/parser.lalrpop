@@ -17,7 +17,7 @@ Atom: Box<Expr> = {
 	Flt => Box::new(Expr::Flt(<>)),
 	Chr => Box::new(Expr::Chr(<>)),
 	Bln => Box::new(Expr::Bln(<>)),
-	Var => Box::new(Expr::Var(<>)),
+	Iden => Box::new(Expr::Iden(<>)),
 };
 
 Expr: Box<Expr> = {
@@ -57,7 +57,7 @@ Bln: bool = {
 	"false" => false,
 };
 
-Var: String = {
+Iden: String = {
 	r"[a-zA-Z_][a-zA-Z0-9_]*" => <>.to_string(),
 };
 
