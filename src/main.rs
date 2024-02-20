@@ -6,13 +6,13 @@ pub mod ast;
 
 lalrpop_mod!(pub parser);
 
-const TEXT_TO_PARSE: &str = r"
+const TEXT_TO_PARSE: &str = r#"
 a : i32 = 91;
 b : i32 = 2;
 c : i64 = a + b *  --3 ^ 4 + 5 + -a;
 d : f64;
-mamba : snake<str, i32, ptr** animal> = black;
-";
+mamba : snake<str, i32, ptr** animal> = snake_new gen<str, i32, ptr** animal>("Rattle", 5, parent);
+"#;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let parser = parser::ProgramParser::new();

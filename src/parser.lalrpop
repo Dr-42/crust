@@ -31,6 +31,7 @@ Expr: Box<Expr> = {
 	UnaryOp,
 	#[precedence(level="2")] #[assoc(side="left")]
 	BinaryOp,
+	Call,
 };
 
 Numeric: i64 = {
@@ -222,6 +223,19 @@ BinaryOp: Box<Expr> = {
 		op: BinaryOp::Or,
 		lhs: l,
 		rhs: r,
+	}),
+};
+
+Call: Box<Expr> = {
+	<name:Iden> "(" <args:Comma<Expr>> ")" => Box::new(Expr::Call {
+		name: name,
+		args: args,
+		generics: None,
+	}),
+	<name:Iden> "gen<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" => Box::new(Expr::Call {
+		name: name,
+		args: args,
+		generics: Some(gens),
 	}),
 };
 

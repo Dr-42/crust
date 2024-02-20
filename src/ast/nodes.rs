@@ -105,8 +105,8 @@ pub enum Expr {
     },
     Call {
         name: String,
-        args: Vec<Expr>,
-        generics: Vec<Type>,
+        args: Vec<Box<Expr>>,
+        generics: Option<Vec<Box<Type>>>,
     },
     Index {
         name: String,
