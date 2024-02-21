@@ -24,24 +24,24 @@ pub enum BuiltinType {
     Str,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct GenericType {
-    pub name: String,
+    pub name: Box<Expr>,
     pub constraints: Option<Vec<Box<Type>>>,
 }
 
 impl GenericType {
-    pub fn new(name: String, constraints: Option<Vec<Box<Type>>>) -> Self {
+    pub fn new(name: Box<Expr>, constraints: Option<Vec<Box<Type>>>) -> Self {
         Self { name, constraints }
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
     UserDefined {
-        name: String,
+        name: Box<Expr>,
         generic_args: Option<Vec<Box<Type>>>,
     },
     Array {
@@ -132,13 +132,13 @@ pub enum Expr {
         span: Span,
     },
     Call {
-        name: String,
+        name: Box<Expr>,
         args: Vec<Box<Expr>>,
         generics: Option<Vec<Box<Type>>>,
         span: Span,
     },
     Index {
-        name: String,
+        name: Box<Expr>,
         indices: Vec<Box<Expr>>,
         span: Span,
     },
@@ -173,13 +173,13 @@ pub enum Stmt {
     Return(Option<Box<Expr>>),
     Block(Vec<Box<Stmt>>),
     VarDecl {
-        name: String,
+        name: Box<Expr>,
         ty: Box<Type>,
         value: Option<Box<Expr>>,
         span: Span,
     },
     StructDecl {
-        name: String,
+        name: Box<Expr>,
         fields: Vec<Box<Stmt>>,
         generics: Option<Vec<Box<GenericType>>>,
         span: Span,
@@ -190,23 +190,23 @@ pub enum Stmt {
         span: Span,
     },
     TraitDecl {
-        name: String,
+        name: Box<Expr>,
         for_ty: Box<Type>,
         methods: Vec<Box<Stmt>>,
         span: Span,
     },
     EnumDecl {
-        name: String,
+        name: Box<Expr>,
         variants: Vec<String>,
         span: Span,
     },
     UnionDecl {
-        name: String,
-        fields: Vec<(String, Type)>,
+        name: Box<Expr>,
+        fields: Vec<(Box<Expr>, Type)>,
         span: Span,
     },
     FunctionDecl {
-        name: String,
+        name: Box<Expr>,
         args: Vec<Box<Stmt>>,
         ret: Box<Type>,
         body: Option<Box<Stmt>>,
@@ -215,7 +215,7 @@ pub enum Stmt {
         span: Span,
     },
     VarAssign {
-        name: String,
+        name: Box<Expr>,
         value: Box<Expr>,
         op: AssignOp,
         span: Span,
@@ -227,9 +227,9 @@ pub enum Stmt {
         span: Span,
     },
     StructAssign {
-        name: String,
-        sname: String,
-        fields: Vec<(String, Box<Stmt>)>,
+        name: Box<Expr>,
+        sname: Box<Expr>,
+        fields: Vec<(Box<Expr>, Box<Stmt>)>,
         span: Span,
     },
     StructMemberAssign {
@@ -239,7 +239,7 @@ pub enum Stmt {
         span: Span,
     },
     ArrayAssign {
-        name: String,
+        name: Box<Expr>,
         value: Vec<Box<Expr>>,
         span: Span,
     },

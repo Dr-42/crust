@@ -37,10 +37,7 @@ Atom: Box<Expr> = {
 	Flt,
 	Chr,
 	Bln,
-	<l:@L> <val:Iden> <r:@R> => Box::new(Expr::Iden{
-		val: val,
-		span: Span::new(l as u32, r as u32),
-	}),
+	Iden,
 	Index,
 	Call,
 	MemberAccess,
@@ -106,8 +103,11 @@ Bln: Box<Expr> = {
 	}),
 };
 
-Iden: String = {
-	<l:@L> <val:r"[a-zA-Z_][a-zA-Z0-9_]*"> <r:@L> => val.to_string(),
+Iden: Box<Expr> = {
+	<l:@L> <val:r"[a-zA-Z_][a-zA-Z0-9_]*"> <r:@L> => Box::new(Expr::Iden {
+		val: val.to_string(),
+		span: Span::new(l as u32, r as u32),
+	}),
 };
 
 OpInp: Box<Expr> = {
@@ -329,10 +329,7 @@ MemAccessOperands: Box<Expr> = {
 	Flt,
 	Chr,
 	Bln,
-	<l:@L> <val:Iden> <r:@R> => Box::new(Expr::Iden{
-		val: val,
-		span: Span::new(l as u32, r as u32),
-	}),
+	Iden,
 	Index,
 	Call,
 };
@@ -715,7 +712,7 @@ DerefAssign: Box<Stmt> = {
 	}),
 };
 
-NameVal: (String, Box<Stmt>) = {
+NameVal: (Box<Expr>, Box<Stmt>) = {
 	<name:Iden> "=" <val:Stmt> => (name, val),
 };
 
