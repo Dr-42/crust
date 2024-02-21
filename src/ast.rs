@@ -1,6 +1,5 @@
 pub mod nodes;
 pub mod semantics;
-pub mod test;
 
 pub type Span = codespan::Span;
 
