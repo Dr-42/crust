@@ -460,7 +460,7 @@ VarDecl: Box<Stmt> = {
 };
 
 Block: Box<Stmt> = {
-	"{" <stmts:Stmt*> "}" => Box::new(Stmt::Block(stmts)),
+	"{" <stmts:Stmt*> "}" => Box::new(Stmt::add_block(stmts)),
 };
 
 While: Box<Stmt> = {

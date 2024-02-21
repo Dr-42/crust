@@ -1,0 +1,11 @@
+fnc print(a: str, ...) : void;
+
+struct foo {
+	bar: str = "Nathan",
+	baz: i32 = 64,
+}
+
+fnc main() : i32 {
+	print("Foo: %s, %d\n", f.bar, f.baz);
+	ret 0;
+}

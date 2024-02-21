@@ -1,3 +1,4 @@
+pub mod decldata;
 pub mod nodes;
 
 pub type Span = codespan::Span;

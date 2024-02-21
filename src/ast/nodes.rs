@@ -1,4 +1,4 @@
-use super::Span;
+use super::{decldata::DeclData, Span};
 
 pub enum Comment {
     SingleLine(String),
@@ -186,7 +186,10 @@ pub enum Stmt {
         span: Span,
     },
     Return(Option<Box<Expr>>),
-    Block(Vec<Box<Stmt>>),
+    Block {
+        stmts: Vec<Box<Stmt>>,
+        decl_data: DeclData,
+    },
     VarDecl {
         name: Box<Expr>,
         ty: Box<Type>,
@@ -268,13 +271,28 @@ pub enum Stmt {
     Continue,
 }
 
+impl Stmt {
+    pub fn add_block(stmts: Vec<Box<Stmt>>) -> Self {
+        let mut decl_data = DeclData::new();
+        for stmt in &stmts {
+            decl_data.add(stmt);
+        }
+        Stmt::Block { stmts, decl_data }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Program {
     pub stmts: Vec<Box<Stmt>>,
+    pub decl_data: DeclData,
 }
 
 impl Program {
     pub fn new(stmts: Vec<Box<Stmt>>) -> Self {
-        Self { stmts }
+        let mut decl_data = DeclData::new();
+        for stmt in &stmts {
+            decl_data.add(stmt);
+        }
+        Self { stmts, decl_data }
     }
 }
