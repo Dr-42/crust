@@ -123,24 +123,29 @@ pub enum Expr {
     UnaryOp {
         op: UnaryOp,
         expr: Box<Expr>,
+        span: Span,
     },
     BinaryOp {
         lhs: Box<Expr>,
         op: BinaryOp,
         rhs: Box<Expr>,
+        span: Span,
     },
     Call {
         name: String,
         args: Vec<Box<Expr>>,
         generics: Option<Vec<Box<Type>>>,
+        span: Span,
     },
     Index {
         name: String,
         indices: Vec<Box<Expr>>,
+        span: Span,
     },
     MemberAccess {
         name: Box<Expr>,
         member: Box<Expr>,
+        span: Span,
     },
 }
 
