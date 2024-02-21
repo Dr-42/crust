@@ -34,8 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let text = ast::preremove_comments(&text);
             let program = parser::ProgramParser::new().parse(&text);
             match program {
-                Ok(mut program) => {
-                    ast::semantics::infer(&mut program)?;
+                Ok(program) => {
                     // Output path outs/FILENAME.ast
                     if !std::path::Path::new("outs").exists() {
                         std::fs::create_dir("outs")?;
