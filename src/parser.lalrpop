@@ -107,6 +107,7 @@ Iden: Box<Expr> = {
 	<l:@L> <val:r"[a-zA-Z_][a-zA-Z0-9_]*"> <r:@L> => Box::new(Expr::Iden {
 		val: val.to_string(),
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 };
 
@@ -125,48 +126,56 @@ UnaryOp: Box<Expr> = {
 		op: UnaryOp::Dec,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="1")]
 	<l:@L> "++" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::Inc,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="2")]
 	<l:@L> "&" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::Ref,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="3")]
 	<l:@L> "*" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::Deref,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="4")]
 	<l:@L> "+" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::Pos,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="5")]
 	<l:@L> "-" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::Neg,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="6")]
 	<l:@L> "!" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::Not,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 	#[precedence(level="7")]
 	<l:@L> "~" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
 		op: UnaryOp::BitNot,
 		expr: expr,
 		span: Span::new(l as u32, r as u32),
+		ty: None,
 	}),
 };
 
@@ -177,6 +186,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="1")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "/" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -184,6 +194,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="2")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "%" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -191,6 +202,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="3")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "+" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -198,6 +210,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="4")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "-" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -205,6 +218,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="5")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "<<" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -212,6 +226,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="6")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> ">>" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -219,6 +234,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="7")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "<" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -226,6 +242,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="8")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "<=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -233,6 +250,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="9")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> ">" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -240,6 +258,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="10")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> ">=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -247,6 +266,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="11")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "==" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -254,6 +274,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="12")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "!=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -261,6 +282,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="13")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "&" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -268,6 +290,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="14")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "^" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -275,6 +298,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="15")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "|" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -282,6 +306,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="16")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "&&" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -289,6 +314,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	#[precedence(level="17")] #[assoc(side="left")]
 	<ls:@L> <l:OpInp> "||" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
@@ -296,6 +322,7 @@ BinaryOp: Box<Expr> = {
 		lhs: l,
 		rhs: r,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 };
 
@@ -305,12 +332,14 @@ Call: Box<Expr> = {
 		args: args,
 		generics: None,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 	<ls:@L> <name:Iden> "::<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
 		name: name,
 		args: args,
 		generics: Some(gens),
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 };
 
@@ -319,6 +348,7 @@ Index: Box<Expr> = {
 		name: name,
 		indices: v,
 		span: Span::new(ls as u32, rs as u32),
+		ty: None,
 	}),
 };
 
@@ -342,6 +372,7 @@ MemberAccess: Box<Expr> = {
 				name: base,
 				member: m,
 				span: Span::new(ls as u32, rs as u32),
+				ty: None,
 			});
 		}
 		base
@@ -404,10 +435,12 @@ UserDefined: Box<Type> = {
 	<name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
 		name: name,
 		generic_args: Some(args),
+		variant: None,
 	}),
 	<name:Iden> => Box::new(Type::UserDefined {
 		name: name,
 		generic_args: None,
+		variant: None,
 	}),
 };
 

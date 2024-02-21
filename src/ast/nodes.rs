@@ -6,7 +6,7 @@ pub enum Comment {
     Doc(String),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum BuiltinType {
     I8,
     I16,
@@ -37,12 +37,20 @@ impl GenericType {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum UserDefinedType {
+    Struct,
+    Enum,
+    Union,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
     UserDefined {
         name: Box<Expr>,
         generic_args: Option<Vec<Box<Type>>>,
+        variant: Option<UserDefinedType>,
     },
     Array {
         base: Box<Type>,
@@ -50,7 +58,7 @@ pub enum Type {
     },
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Debug)]
 pub enum UnaryOp {
     Dec,
     Inc,
@@ -62,7 +70,7 @@ pub enum UnaryOp {
     BitNot,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Debug)]
 pub enum BinaryOp {
     Mul,
     Div,
@@ -84,7 +92,7 @@ pub enum BinaryOp {
     Or,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum AssignOp {
     Assign,
     AddAssign,
@@ -119,33 +127,39 @@ pub enum Expr {
     Iden {
         val: String,
         span: Span,
+        ty: Option<Box<Type>>,
     },
     UnaryOp {
         op: UnaryOp,
         expr: Box<Expr>,
         span: Span,
+        ty: Option<Box<Type>>,
     },
     BinaryOp {
         lhs: Box<Expr>,
         op: BinaryOp,
         rhs: Box<Expr>,
         span: Span,
+        ty: Option<Box<Type>>,
     },
     Call {
         name: Box<Expr>,
         args: Vec<Box<Expr>>,
         generics: Option<Vec<Box<Type>>>,
         span: Span,
+        ty: Option<Box<Type>>,
     },
     Index {
         name: Box<Expr>,
         indices: Vec<Box<Expr>>,
         span: Span,
+        ty: Option<Box<Type>>,
     },
     MemberAccess {
         name: Box<Expr>,
         member: Box<Expr>,
         span: Span,
+        ty: Option<Box<Type>>,
     },
 }
 
