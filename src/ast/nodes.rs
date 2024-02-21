@@ -6,7 +6,7 @@ pub enum Comment {
     Doc(String),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BuiltinType {
     I8,
     I16,
@@ -24,7 +24,7 @@ pub enum BuiltinType {
     Str,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GenericType {
     pub name: Box<Expr>,
     pub constraints: Option<Vec<Box<Type>>>,
@@ -36,14 +36,14 @@ impl GenericType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum UserDefinedType {
     Struct,
     Enum,
     Union,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
@@ -58,7 +58,7 @@ pub enum Type {
     },
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum UnaryOp {
     Dec,
     Inc,
@@ -70,7 +70,7 @@ pub enum UnaryOp {
     BitNot,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum BinaryOp {
     Mul,
     Div,
@@ -84,6 +84,7 @@ pub enum BinaryOp {
     Gt,
     Gte,
     Eq,
+    Clone,
     Neq,
     BitAnd,
     BitXor,
@@ -92,7 +93,7 @@ pub enum BinaryOp {
     Or,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AssignOp {
     Assign,
     AddAssign,
@@ -102,7 +103,7 @@ pub enum AssignOp {
     ModAssign,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
     Numeric {
         val: i64,
@@ -163,7 +164,7 @@ pub enum Expr {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     Expr(Box<Expr>),
     If {
@@ -267,7 +268,7 @@ pub enum Stmt {
     Continue,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Program {
     pub stmts: Vec<Box<Stmt>>,
 }
