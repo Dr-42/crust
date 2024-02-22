@@ -128,39 +128,33 @@ pub enum Expr {
     Iden {
         val: String,
         span: Span,
-        ty: Option<Box<Type>>,
     },
     UnaryOp {
         op: UnaryOp,
         expr: Box<Expr>,
         span: Span,
-        ty: Option<Box<Type>>,
     },
     BinaryOp {
         lhs: Box<Expr>,
         op: BinaryOp,
         rhs: Box<Expr>,
         span: Span,
-        ty: Option<Box<Type>>,
     },
     Call {
         name: Box<Expr>,
         args: Vec<Box<Expr>>,
         generics: Option<Vec<Box<Type>>>,
         span: Span,
-        ty: Option<Box<Type>>,
     },
     Index {
         name: Box<Expr>,
         indices: Vec<Box<Expr>>,
         span: Span,
-        ty: Option<Box<Type>>,
     },
     MemberAccess {
         name: Box<Expr>,
         member: Box<Expr>,
         span: Span,
-        ty: Option<Box<Type>>,
     },
 }
 
