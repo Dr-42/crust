@@ -1,9 +1,13 @@
+use std::error::Error;
+
+use crate::parser;
+
 pub mod decldata;
 pub mod nodes;
 
 pub type Span = codespan::Span;
 
-pub fn preremove_comments(text: &str) -> String {
+pub fn preremove_comments(text: String) -> String {
     let mut result = String::new();
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
@@ -32,4 +36,11 @@ pub fn preremove_comments(text: &str) -> String {
         result.push(c);
     }
     result
+}
+
+pub fn parse(text: &str) -> Result<Box<nodes::Program>, Box<dyn Error>> {
+    let text = preremove_comments(text.to_string());
+    let parser = parser::ProgramParser::new();
+    let res = parser.parse(&text).map_err(|e| format!("{:?}", e))?;
+    Ok(res)
 }
