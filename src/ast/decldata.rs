@@ -35,12 +35,20 @@ pub struct UnionDeclData {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct TraitDeclData {
+    pub name: String,
+    pub methods: Vec<FunctionDeclData>,
+    pub generics: Option<Vec<GenericType>>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct DeclData {
     pub var: Vec<VarDeclData>,
     pub struct_: Vec<StructDeclData>,
     pub function: Vec<FunctionDeclData>,
     pub enum_: Vec<EnumDeclData>,
     pub union: Vec<UnionDeclData>,
+    pub trait_: Vec<TraitDeclData>,
 }
 
 impl Default for DeclData {
@@ -57,6 +65,7 @@ impl DeclData {
             function: Vec::new(),
             enum_: Vec::new(),
             union: Vec::new(),
+            trait_: Vec::new(),
         }
     }
 
@@ -192,6 +201,73 @@ impl DeclData {
                 self.union.push(UnionDeclData {
                     name: nm,
                     fields: flds,
+                });
+            }
+            Stmt::TraitDecl { name, methods, .. } => {
+                let nm = match *name {
+                    Expr::Iden { val, .. } => val.clone(),
+                    _ => panic!("Invalid name for trait declaration"),
+                };
+                let mut meths = Vec::new();
+                for m in methods.iter() {
+                    match *m.clone() {
+                        Stmt::FunctionDecl {
+                            name,
+                            args,
+                            ret,
+                            generics,
+                            isvararg,
+                            ..
+                        } => {
+                            let nm = match *name {
+                                Expr::Iden { val, .. } => val.clone(),
+                                _ => panic!("Invalid name for function declaration"),
+                            };
+                            let mut arg = Vec::new();
+                            for a in args.iter() {
+                                match *a.clone() {
+                                    Stmt::VarDecl { name, ty, .. } => {
+                                        let nm = match *name {
+                                            Expr::Iden { val, .. } => val.clone(),
+                                            _ => panic!("Invalid name for function argument"),
+                                        };
+                                        arg.push(VarDeclData {
+                                            name: nm,
+                                            ty: ty.clone(),
+                                        });
+                                    }
+                                    _ => {
+                                        panic!("Invalid argument in function declaration");
+                                    }
+                                };
+                            }
+                            let generics = match generics {
+                                Some(ref g) => {
+                                    let mut res = Vec::new();
+                                    for gen in g.iter() {
+                                        res.push(*gen.clone());
+                                    }
+                                    Some(res)
+                                }
+                                None => None,
+                            };
+                            meths.push(FunctionDeclData {
+                                name: nm,
+                                args: arg,
+                                ret: ret.clone(),
+                                generics,
+                                variadic: isvararg,
+                            });
+                        }
+                        _ => {
+                            panic!("Invalid method in trait declaration");
+                        }
+                    };
+                }
+                self.trait_.push(TraitDeclData {
+                    name: nm,
+                    methods: meths,
+                    generics: None,
                 });
             }
             _ => {}
