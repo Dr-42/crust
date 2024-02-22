@@ -29,6 +29,7 @@ Stmt: Box<Stmt> = {
 	StructMemberAssign,
 	ArrayAssign,
 	ArrayMemberAssign,
+	TraitAssign,
 };
 
 Atom: Box<Expr> = {
@@ -659,9 +660,8 @@ FunctionDecl: Box<Stmt> = {
 };
 
 TraitDecl: Box<Stmt> = {
-	<ls:@L> "trait" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitDecl {
+	<ls:@L> "trait" <name:Iden> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitDecl {
 		name: name,
-		for_ty: ty,
 		methods: methods,
 		span: Span::new(ls as u32, rs as u32),
 	}),
@@ -841,5 +841,14 @@ ArrayMemberAssign: Box<Stmt> = {
 		value: value,
 		op: AssignOp::ModAssign,
 		span: Span::new(l as u32, r as u32),
+	}),
+};
+
+TraitAssign: Box<Stmt> = {
+	<ls:@L> "trait" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitAssign {
+		name: name,
+		for_ty: ty,
+		methods: methods,
+		span: Span::new(ls as u32, rs as u32),
 	}),
 };

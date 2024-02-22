@@ -209,7 +209,6 @@ pub enum Stmt {
     },
     TraitDecl {
         name: Box<Expr>,
-        for_ty: Box<Type>,
         methods: Vec<Box<Stmt>>,
         span: Span,
     },
@@ -265,6 +264,12 @@ pub enum Stmt {
         element: Box<Expr>,
         value: Box<Expr>,
         op: AssignOp,
+        span: Span,
+    },
+    TraitAssign {
+        name: Box<Expr>,
+        for_ty: Box<Type>,
+        methods: Vec<Box<Stmt>>,
         span: Span,
     },
     Break,
