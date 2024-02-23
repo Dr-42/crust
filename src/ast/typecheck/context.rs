@@ -1,25 +1,29 @@
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+
 use crate::ast::{
     decldata::DeclData,
-    nodes::{AssignOp, Expr, GenericType, Program, Stmt, Type},
+    nodes::{AssignOp, BuiltinType, Expr, GenericType, Program, Stmt, Type},
     Span,
 };
 
 use std::error::Error;
 
 pub struct TypecheckContext {
-    pub errors: Vec<String>,
+    pub errors: Vec<Diagnostic<usize>>,
     pub decls: DeclData,
     func_ret_type: Option<Type>,
     in_loop: bool,
+    file_id: usize,
 }
 
 impl TypecheckContext {
-    pub fn new() -> TypecheckContext {
+    pub fn new(file_id: usize) -> TypecheckContext {
         TypecheckContext {
             errors: Vec::new(),
             decls: DeclData::new(),
             func_ret_type: None,
             in_loop: false,
+            file_id,
         }
     }
 
@@ -32,7 +36,7 @@ impl TypecheckContext {
 
     pub fn typecheck_stmt(&mut self, stmt: Stmt) -> Result<(), Box<dyn Error>> {
         match stmt {
-            Stmt::Expr(expr) => self.typecheck_expr(*expr)?,
+            Stmt::Expr { expr, span } => self.typecheck_expr_stmt(*expr, span)?,
             Stmt::If {
                 cond,
                 body,
@@ -167,8 +171,19 @@ impl TypecheckContext {
         Ok(())
     }
 
-    fn typecheck_expr(&mut self, expr: Expr) -> Result<(), Box<dyn Error>> {
-        todo!()
+    fn typecheck_expr_stmt(&mut self, expr: Expr, span: Span) -> Result<(), Box<dyn Error>> {
+        if self.func_ret_type.is_none() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message(
+                        "Statements with only expressions are not allowed outside functions",
+                    )
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This expression statement is not allowed here")]),
+            );
+        }
+        self.typecheck_expr(expr)?;
+        Ok(())
     }
 
     fn typecheck_if(
@@ -178,7 +193,24 @@ impl TypecheckContext {
         els: Option<Box<Stmt>>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        let cond_type = self.typecheck_expr(cond)?;
+        if cond_type != Type::Builtin(BuiltinType::Bln) {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("Expected boolean expression")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("The condition must be a boolean expression")]),
+            );
+        }
+        self.decls.checkpoint();
+        self.typecheck_stmt(body)?;
+        self.decls.rollback();
+        if let Some(els) = els {
+            self.decls.checkpoint();
+            self.typecheck_stmt(*els)?;
+            self.decls.rollback();
+        }
+        Ok(())
     }
 
     fn typecheck_while(
@@ -187,7 +219,21 @@ impl TypecheckContext {
         body: Stmt,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        let cond_type = self.typecheck_expr(cond)?;
+        if cond_type != Type::Builtin(BuiltinType::Bln) {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("Expected boolean expression")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("The condition must be a boolean expression")]),
+            );
+        }
+        self.decls.checkpoint();
+        self.in_loop = true;
+        self.typecheck_stmt(body)?;
+        self.in_loop = false;
+        self.decls.rollback();
+        Ok(())
     }
 
     fn typecheck_for(
@@ -198,7 +244,23 @@ impl TypecheckContext {
         body: Stmt,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        self.decls.checkpoint();
+        self.typecheck_stmt(init)?;
+        let cond_type = self.typecheck_expr(cond)?;
+        if cond_type != Type::Builtin(BuiltinType::Bln) {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("Expected boolean expression")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("The condition must be a boolean expression")]),
+            );
+        }
+        self.typecheck_stmt(step)?;
+        self.in_loop = true;
+        self.typecheck_stmt(body)?;
+        self.in_loop = false;
+        self.decls.rollback();
+        Ok(())
     }
 
     fn typecheck_return(&mut self, expr: Option<Box<Expr>>) -> Result<(), Box<dyn Error>> {
@@ -352,6 +414,10 @@ impl TypecheckContext {
     }
 
     fn typecheck_continue(&mut self) -> Result<(), Box<dyn Error>> {
+        todo!()
+    }
+
+    fn typecheck_expr(&mut self, expr: Expr) -> Result<Type, Box<dyn Error>> {
         todo!()
     }
 }

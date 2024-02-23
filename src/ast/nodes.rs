@@ -160,7 +160,10 @@ pub enum Expr {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
-    Expr(Box<Expr>),
+    Expr {
+        expr: Box<Expr>,
+        span: Span,
+    },
     If {
         cond: Box<Expr>,
         body: Box<Stmt>,

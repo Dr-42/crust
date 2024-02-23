@@ -58,11 +58,11 @@ where
 
 pub fn parse(text: &str) -> Result<Box<nodes::Program>, Box<dyn Error>> {
     let text = preprocess::preremove_comments(text.to_string());
+    let mut files = SimpleFiles::new();
+    let file_id = files.add("main", text.clone());
     let parser = parser::ProgramParser::new();
     let res = parser.parse(&text);
     if res.is_err() {
-        let mut files = SimpleFiles::new();
-        let file_id = files.add("main", text.clone());
         let errors = convert_error(file_id, res.clone().err().unwrap());
         let writer = StandardStream::stderr(term::termcolor::ColorChoice::Auto);
         let config = codespan_reporting::term::Config::default();
@@ -72,6 +72,6 @@ pub fn parse(text: &str) -> Result<Box<nodes::Program>, Box<dyn Error>> {
         }
     }
     let res = res.map_err(|e| e.to_string())?;
-    //typecheck::typecheck(*res.clone())?;
+    typecheck::typecheck(*res.clone(), file_id)?;
     Ok(res)
 }

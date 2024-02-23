@@ -9,10 +9,7 @@ pub Program: Box<Program> = {
 };
 
 Stmt: Box<Stmt> = {
-	#[precedence(level="0")]
-	<t:VarDecl> ";" => t,
-	#[precedence(level="1")]
-	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
+	ExprStmt,
 	While,
 	Block,
 	For,
@@ -30,6 +27,13 @@ Stmt: Box<Stmt> = {
 	ArrayAssign,
 	ArrayMemberAssign,
 	TraitAssign,
+};
+
+ExprStmt : Box<Stmt> = {
+	#[precedence(level="0")]
+	<t:VarDecl> ";" => t,
+	#[precedence(level="1")]
+	<l:@L> <t:Expr> <r:@R> ";" => Box::new(Stmt::Expr{ expr: t, span: Span::new(l as u32, r as u32) }),
 };
 
 Atom: Box<Expr> = {
@@ -452,10 +456,13 @@ For: Box<Stmt> = {
 	<ls:@L> "for" "(" <init:Stmt> <cond:Expr> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
 		init: init,
 		cond: cond,
-		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
-			val: 1,
+		step: Box::new(Stmt::Expr{ 
+			expr : Box::new(Expr::Numeric{
+				val: 1,
+				span: Span::new(0, 0),
+			}),
 			span: Span::new(0, 0),
-		}))),
+		}),
 		body: body,
 		span: Span::new(ls as u32, rs as u32),
 	}),
@@ -475,10 +482,13 @@ For: Box<Stmt> = {
 			val: true,
 			span: Span::new(0, 0),
 		}),
-		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
-			val: 1,
+		step: Box::new(Stmt::Expr{
+			expr: Box::new(Expr::Numeric{
+				val: 1,
+				span: Span::new(0, 0),
+			}),
 			span: Span::new(0, 0),
-		}))),
+		}),
 		body: body,
 		span: Span::new(ls as u32, rs as u32),
 	}),
@@ -486,7 +496,10 @@ For: Box<Stmt> = {
 
 ValidIfTail: Box<Stmt> = {
 	Block,
-	<Expr> ";" => Box::new(Stmt::Expr(<>)),
+	<l:@L> <expr:Expr> <r:@R> ";" => Box::new(Stmt::Expr {
+		expr: expr,
+		span: Span::new(l as u32, r as u32),
+	}),
 	Return,
 	Continue,
 	Break,
