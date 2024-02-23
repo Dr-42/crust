@@ -89,6 +89,7 @@ name = "crust"
 version = "0.1.0"
 dependencies = [
  "codespan",
+ "codespan-reporting",
  "lalrpop",
  "lalrpop-util",
 ]
