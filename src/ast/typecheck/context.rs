@@ -1,7 +1,7 @@
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 use crate::ast::{
-    decldata::DeclData,
+    decldata::{DeclData, VarDeclData},
     nodes::{AssignOp, BuiltinType, Expr, GenericType, Program, Stmt, Type},
     Span,
 };
@@ -193,6 +193,14 @@ impl TypecheckContext {
         els: Option<Box<Stmt>>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
+        if self.func_ret_type.is_none() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("if statements are not allowed outside functions")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
         let cond_type = self.typecheck_expr(cond)?;
         if cond_type != Type::Builtin(BuiltinType::Bln) {
             self.errors.push(
@@ -219,6 +227,14 @@ impl TypecheckContext {
         body: Stmt,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
+        if self.func_ret_type.is_none() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("while loops are not allowed outside functions")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
         let cond_type = self.typecheck_expr(cond)?;
         if cond_type != Type::Builtin(BuiltinType::Bln) {
             self.errors.push(
@@ -244,6 +260,14 @@ impl TypecheckContext {
         body: Stmt,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
+        if self.func_ret_type.is_none() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("for loops are not allowed outside functions")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
         self.decls.checkpoint();
         self.typecheck_stmt(init)?;
         let cond_type = self.typecheck_expr(cond)?;
@@ -264,11 +288,59 @@ impl TypecheckContext {
     }
 
     fn typecheck_return(&mut self, expr: Option<Box<Expr>>) -> Result<(), Box<dyn Error>> {
-        todo!()
+        if self.func_ret_type.is_none() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("return statements are not allowed outside functions")
+                    .with_labels(vec![Label::primary(
+                        self.file_id,
+                        expr.as_ref().unwrap().span(),
+                    )
+                    .with_message("This statement is not allowed here")]),
+            );
+        }
+
+        if let Some(expr) = expr {
+            let expr_type = self.typecheck_expr(*expr.clone())?;
+            if let Some(ret_type) = &self.func_ret_type {
+                if expr_type != *ret_type {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Expected return type to match function return type")
+                            .with_labels(vec![Label::primary(self.file_id, expr.span())
+                                .with_message(format!(
+                                    "Expected return type to be {:?}, found {:?}",
+                                    ret_type, expr_type
+                                ))]),
+                    );
+                }
+            }
+        } else if let Some(ret_type) = &self.func_ret_type {
+            if ret_type != &Type::Builtin(BuiltinType::Void) {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected return type to match function return type")
+                        .with_labels(vec![Label::primary(
+                            self.file_id,
+                            expr.as_ref().unwrap().span(),
+                        )
+                        .with_message(format!(
+                            "Expected return type to be {:?}, found nothing",
+                            ret_type
+                        ))]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_block(&mut self, stmts: Vec<Box<Stmt>>) -> Result<(), Box<dyn Error>> {
-        todo!()
+        self.decls.checkpoint();
+        for stmt in stmts {
+            self.typecheck_stmt(*stmt)?;
+        }
+        self.decls.rollback();
+        Ok(())
     }
 
     fn typecheck_var_decl(
@@ -278,7 +350,56 @@ impl TypecheckContext {
         value: Option<Box<Expr>>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        let stmt_span = span;
+        match name {
+            Expr::Iden { val, span } => {
+                if self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Variable already declared")
+                            .with_labels(vec![
+                                Label::primary(self.file_id, stmt_span)
+                                    .with_message(format!("Variable {} is already declared", val)),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_var_span(&val).unwrap(),
+                                )
+                                .with_message("First declaration here"),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_var_span(&val).unwrap(),
+                                ),
+                                Label::secondary(self.file_id, span)
+                                    .with_message("Second declaration here"),
+                            ]),
+                    );
+                }
+                if let Some(value) = value {
+                    let value_type = self.typecheck_expr(*value.clone())?;
+                    if value_type != ty {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Expected value type to match variable type")
+                                .with_labels(vec![Label::primary(self.file_id, value.span())
+                                    .with_message(format!(
+                                        "Expected value type to be {:?}, found {:?}",
+                                        ty, value_type
+                                    ))]),
+                        );
+                    }
+                }
+                self.decls.add_var(val, Box::new(ty), span);
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for variable declaration")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_struct_decl(
@@ -288,7 +409,135 @@ impl TypecheckContext {
         generics: Option<Vec<Box<GenericType>>>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        match name {
+            Expr::Iden { val, span } => {
+                if self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Struct already declared")
+                            .with_labels(vec![
+                                Label::primary(self.file_id, span)
+                                    .with_message(format!("Struct {} is already declared", val)),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_struct_span(&val).unwrap(),
+                                )
+                                .with_message("First declaration here"),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_struct_span(&val).unwrap(),
+                                ),
+                                Label::secondary(self.file_id, span)
+                                    .with_message("Second declaration here"),
+                            ]),
+                    );
+                }
+                let generics = generics
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|g| *g.clone())
+                    .collect::<Vec<_>>();
+                let generics = if generics.is_empty() {
+                    None
+                } else {
+                    Some(generics)
+                };
+                let mut flds = Vec::new();
+
+                for field in fields {
+                    match *field {
+                        Stmt::VarDecl {
+                            name,
+                            ty,
+                            value,
+                            span,
+                        } => {
+                            match *name {
+                                Expr::Iden { val, span } => {
+                                    if self.decls.is_declared(&val) {
+                                        self.errors.push(
+                                            Diagnostic::error()
+                                                .with_message("Struct field already declared")
+                                                .with_labels(vec![
+                                                    Label::primary(self.file_id, span)
+                                                        .with_message(format!(
+                                                            "Struct field {} is already declared",
+                                                            val
+                                                        )),
+                                                    Label::secondary(
+                                                        self.file_id,
+                                                        self.decls.get_var_span(&val).unwrap(),
+                                                    )
+                                                    .with_message("First declaration here"),
+                                                    Label::secondary(
+                                                        self.file_id,
+                                                        self.decls.get_var_span(&val).unwrap(),
+                                                    ),
+                                                    Label::secondary(self.file_id, span)
+                                                        .with_message("Second declaration here"),
+                                                ]),
+                                        );
+                                    }
+                                    if let Some(value) = value {
+                                        let value_type = self.typecheck_expr(*value.clone())?;
+                                        if value_type != *ty {
+                                            self.errors.push(
+                                                Diagnostic::error()
+                                                    .with_message("Expected value type to match field type")
+                                                    .with_labels(vec![Label::primary(
+                                                        self.file_id,
+                                                        value.span(),
+                                                    )
+                                                    .with_message(format!(
+                                                        "Expected value type to be {:?}, found {:?}",
+                                                        ty, value_type
+                                                    ))]),
+                                            );
+                                        }
+                                    }
+                                    flds.push(VarDeclData {
+                                        name: val,
+                                        ty: ty.clone(),
+                                        span,
+                                    });
+                                }
+                                _ => {
+                                    self.errors.push(
+                                        Diagnostic::error()
+                                            .with_message("Expected identifier")
+                                            .with_labels(vec![Label::primary(self.file_id, span)
+                                            .with_message(
+                                            "Expected an identifier for struct field declaration",
+                                        )]),
+                                    );
+                                }
+                            }
+                        }
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Unexpected struct field declaration")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected a variable type pair with optional initial value for struct field",
+                                        )]),
+                            );
+                        }
+                    }
+                }
+
+                self.decls.add_struct(val, flds, generics, span);
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for struct declaration")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_impl_decl(

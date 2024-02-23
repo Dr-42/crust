@@ -158,6 +158,24 @@ pub enum Expr {
     },
 }
 
+impl Expr {
+    pub fn span(&self) -> Span {
+        match self {
+            Expr::Numeric { span, .. } => *span,
+            Expr::Strng { span, .. } => *span,
+            Expr::Flt { span, .. } => *span,
+            Expr::Chr { span, .. } => *span,
+            Expr::Bln { span, .. } => *span,
+            Expr::Iden { span, .. } => *span,
+            Expr::UnaryOp { span, .. } => *span,
+            Expr::BinaryOp { span, .. } => *span,
+            Expr::Call { span, .. } => *span,
+            Expr::Index { span, .. } => *span,
+            Expr::MemberAccess { span, .. } => *span,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     Expr {
