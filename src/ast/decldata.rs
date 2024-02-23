@@ -42,6 +42,16 @@ pub struct TraitDeclData {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+struct DeclDataCheckpoint {
+    var: usize,
+    struct_: usize,
+    function: usize,
+    enum_: usize,
+    union: usize,
+    trait_: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct DeclData {
     pub var: Vec<VarDeclData>,
     pub struct_: Vec<StructDeclData>,
@@ -49,6 +59,7 @@ pub struct DeclData {
     pub enum_: Vec<EnumDeclData>,
     pub union: Vec<UnionDeclData>,
     pub trait_: Vec<TraitDeclData>,
+    checkpoint: Vec<DeclDataCheckpoint>,
 }
 
 impl Default for DeclData {
@@ -59,14 +70,17 @@ impl Default for DeclData {
 
 impl DeclData {
     pub fn new() -> DeclData {
-        DeclData {
+        let mut res = DeclData {
             var: Vec::new(),
             struct_: Vec::new(),
             function: Vec::new(),
             enum_: Vec::new(),
             union: Vec::new(),
             trait_: Vec::new(),
-        }
+            checkpoint: Vec::new(),
+        };
+        res.checkpoint();
+        res
     }
 
     pub fn add(&mut self, stmt: &Stmt) {
@@ -80,6 +94,7 @@ impl DeclData {
                     name: nm,
                     ty: ty.clone(),
                 });
+                self.checkpoint.last_mut().unwrap().var += 1;
             }
             Stmt::StructDecl {
                 name,
@@ -124,6 +139,7 @@ impl DeclData {
                     fields: flds,
                     generics,
                 });
+                self.checkpoint.last_mut().unwrap().struct_ += 1;
             }
             Stmt::FunctionDecl {
                 name,
@@ -172,6 +188,7 @@ impl DeclData {
                     generics,
                     variadic: isvararg,
                 });
+                self.checkpoint.last_mut().unwrap().function += 1;
             }
             Stmt::EnumDecl { name, variants, .. } => {
                 let nm = match *name {
@@ -182,6 +199,7 @@ impl DeclData {
                     name: nm,
                     variants: variants.clone(),
                 });
+                self.checkpoint.last_mut().unwrap().enum_ += 1;
             }
             Stmt::UnionDecl { name, fields, .. } => {
                 let nm = match *name {
@@ -202,6 +220,7 @@ impl DeclData {
                     name: nm,
                     fields: flds,
                 });
+                self.checkpoint.last_mut().unwrap().union += 1;
             }
             Stmt::TraitDecl { name, methods, .. } => {
                 let nm = match *name {
@@ -269,8 +288,30 @@ impl DeclData {
                     methods: meths,
                     generics: None,
                 });
+                self.checkpoint.last_mut().unwrap().trait_ += 1;
             }
             _ => {}
         }
+    }
+
+    pub fn checkpoint(&mut self) {
+        self.checkpoint.push(DeclDataCheckpoint {
+            var: 0,
+            struct_: 0,
+            function: 0,
+            enum_: 0,
+            union: 0,
+            trait_: 0,
+        });
+    }
+
+    pub fn rollback(&mut self) {
+        let cp = self.checkpoint.pop().unwrap();
+        self.var.truncate(self.var.len() - cp.var);
+        self.struct_.truncate(self.struct_.len() - cp.struct_);
+        self.function.truncate(self.function.len() - cp.function);
+        self.enum_.truncate(self.enum_.len() - cp.enum_);
+        self.union.truncate(self.union.len() - cp.union);
+        self.trait_.truncate(self.trait_.len() - cp.trait_);
     }
 }

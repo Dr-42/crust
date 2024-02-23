@@ -182,7 +182,6 @@ pub enum Stmt {
     Return(Option<Box<Expr>>),
     Block {
         stmts: Vec<Box<Stmt>>,
-        decl_data: DeclData,
     },
     VarDecl {
         name: Box<Expr>,
@@ -272,26 +271,17 @@ pub enum Stmt {
 
 impl Stmt {
     pub fn add_block(stmts: Vec<Box<Stmt>>) -> Self {
-        let mut decl_data = DeclData::new();
-        for stmt in &stmts {
-            decl_data.add(stmt);
-        }
-        Stmt::Block { stmts, decl_data }
+        Stmt::Block { stmts }
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Program {
     pub stmts: Vec<Box<Stmt>>,
-    pub decl_data: DeclData,
 }
 
 impl Program {
     pub fn new(stmts: Vec<Box<Stmt>>) -> Self {
-        let mut decl_data = DeclData::new();
-        for stmt in &stmts {
-            decl_data.add(stmt);
-        }
-        Self { stmts, decl_data }
+        Self { stmts }
     }
 }

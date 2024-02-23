@@ -72,6 +72,6 @@ pub fn parse(text: &str) -> Result<Box<nodes::Program>, Box<dyn Error>> {
         }
     }
     let res = res.map_err(|e| e.to_string())?;
-    typecheck::typecheck(*res.clone())?;
+    //typecheck::typecheck(*res.clone())?;
     Ok(res)
 }
