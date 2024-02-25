@@ -51,6 +51,13 @@ pub struct TraitDeclData {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct ArrayDeclData {
+    pub name: String,
+    pub ty: Box<Type>,
+    pub len: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 struct DeclDataCheckpoint {
     var: usize,
     struct_: usize,
@@ -68,6 +75,7 @@ pub struct DeclData {
     pub enum_: Vec<EnumDeclData>,
     pub union: Vec<UnionDeclData>,
     pub trait_: Vec<TraitDeclData>,
+    pub array: Vec<ArrayDeclData>,
     checkpoint: Vec<DeclDataCheckpoint>,
 }
 
@@ -87,6 +95,7 @@ impl DeclData {
             union: Vec::new(),
             trait_: Vec::new(),
             checkpoint: Vec::new(),
+            array: Vec::new(),
         };
         res.checkpoint();
         res
@@ -141,6 +150,74 @@ impl DeclData {
         }
         for t in self.trait_.iter() {
             if t.name == name {
+                return true;
+            }
+        }
+        for a in self.array.iter() {
+            if a.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_var_declared(&self, name: &str) -> bool {
+        for v in self.var.iter() {
+            if v.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_struct_declared(&self, name: &str) -> bool {
+        for s in self.struct_.iter() {
+            if s.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_function_declared(&self, name: &str) -> bool {
+        for f in self.function.iter() {
+            if f.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_enum_declared(&self, name: &str) -> bool {
+        for e in self.enum_.iter() {
+            if e.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_union_declared(&self, name: &str) -> bool {
+        for u in self.union.iter() {
+            if u.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_trait_declared(&self, name: &str) -> bool {
+        for t in self.trait_.iter() {
+            if t.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn is_array_declared(&self, name: &str) -> bool {
+        for a in self.array.iter() {
+            if a.name == name {
                 return true;
             }
         }
@@ -212,6 +289,10 @@ impl DeclData {
         });
     }
 
+    pub fn add_array(&mut self, name: String, ty: Box<Type>, len: usize) {
+        self.array.push(ArrayDeclData { name, ty, len });
+    }
+
     pub fn get_var_span(&self, name: &str) -> Option<Span> {
         for v in self.var.iter() {
             if v.name == name {
@@ -261,6 +342,15 @@ impl DeclData {
         for t in self.trait_.iter() {
             if t.name == name {
                 return Some(t.span);
+            }
+        }
+        None
+    }
+
+    pub fn get_array_span(&self, name: &str) -> Option<Span> {
+        for a in self.array.iter() {
+            if a.name == name {
+                return Some(Span::new(0, 0));
             }
         }
         None
@@ -342,6 +432,80 @@ impl DeclData {
         for t in self.trait_.iter() {
             if t.name == name {
                 return t.generics.clone();
+            }
+        }
+        None
+    }
+
+    pub fn get_var(&self, name: &str) -> Option<VarDeclData> {
+        for v in self.var.iter() {
+            if v.name == name {
+                return Some(v.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_struct(&self, name: &str) -> Option<StructDeclData> {
+        for s in self.struct_.iter() {
+            if s.name == name {
+                return Some(s.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_function(&self, name: &str) -> Option<FunctionDeclData> {
+        for f in self.function.iter() {
+            if f.name == name {
+                return Some(f.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_enum(&self, name: &str) -> Option<EnumDeclData> {
+        for e in self.enum_.iter() {
+            if e.name == name {
+                return Some(e.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_union(&self, name: &str) -> Option<UnionDeclData> {
+        for u in self.union.iter() {
+            if u.name == name {
+                return Some(u.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_trait(&self, name: &str) -> Option<TraitDeclData> {
+        for t in self.trait_.iter() {
+            if t.name == name {
+                return Some(t.clone());
+            }
+        }
+        None
+    }
+
+    pub fn get_array(&self, name: &str) -> Option<ArrayDeclData> {
+        for a in self.array.iter() {
+            if a.name == name {
+                return Some(a.clone());
+            }
+        }
+        None
+    }
+}
+
+impl StructDeclData {
+    pub fn find_member_type(&self, name: &str) -> Option<Box<Type>> {
+        for f in self.fields.iter() {
+            if f.name == name {
+                return Some(f.ty.clone());
             }
         }
         None

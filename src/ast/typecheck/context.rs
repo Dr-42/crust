@@ -2,7 +2,7 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 use crate::ast::{
     decldata::{DeclData, VarDeclData},
-    nodes::{AssignOp, BuiltinType, Expr, GenericType, Program, Stmt, Type},
+    nodes::{AssignOp, BuiltinType, Expr, GenericType, Program, Stmt, Type, UnaryOp},
     Span,
 };
 
@@ -856,11 +856,11 @@ impl TypecheckContext {
                                             );
                                         }
                                     }
-                                    arg_names.push(val);
-                                    arg_types.push(ty);
+                                    arg_names.push(val.clone());
+                                    arg_types.push(ty.clone());
                                     arg_arrays.push(VarDeclData {
-                                        name: val.clone(),
-                                        ty: ty.clone(),
+                                        name: val,
+                                        ty,
                                         span,
                                     });
                                 }
@@ -1088,6 +1088,229 @@ impl TypecheckContext {
     }
 
     fn typecheck_expr(&mut self, expr: Expr) -> Result<Type, Box<dyn Error>> {
-        todo!()
+        match expr {
+            Expr::Flt { val, span } => Ok(Type::Builtin(BuiltinType::F64)),
+            Expr::Chr { val, span } => Ok(Type::Builtin(BuiltinType::Chr)),
+            Expr::Bln { val, span } => Ok(Type::Builtin(BuiltinType::Bln)),
+            Expr::Numeric { val, span } => Ok(Type::Builtin(BuiltinType::I64)),
+            Expr::Strng { val, span } => Ok(Type::Builtin(BuiltinType::Str)),
+            Expr::Iden { val, span } => {
+                if !self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Variable not declared")
+                            .with_labels(vec![Label::primary(self.file_id, span)
+                                .with_message(format!("Variable {} is not declared", val))]),
+                    );
+                }
+                Ok(*self.decls.get_var_type(&val).unwrap().clone())
+            }
+            Expr::Call {
+                name,
+                args,
+                generics,
+                span,
+            } => match *name {
+                Expr::Iden { val, span } => {
+                    if !self.decls.is_function_declared(&val) {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Function not declared")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(format!("Function {} is not declared", val))]),
+                        );
+                        Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Function not declared",
+                        )))
+                    } else {
+                        Ok(*self.decls.get_function_ret(&val).unwrap())
+                    }
+                }
+                _ => {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Expected identifier")
+                            .with_labels(vec![Label::primary(self.file_id, span)
+                                .with_message("Expected an identifier for function call")]),
+                    );
+                    Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Expected identifier",
+                    )))
+                }
+            },
+            Expr::Index {
+                name,
+                indices,
+                span,
+            } => match *name {
+                Expr::Iden { val, span } => {
+                    if !self.decls.is_declared(&val) {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Variable not declared")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(format!("Variable {} is not declared", val))]),
+                        );
+                    }
+                    todo!()
+                }
+                _ => {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Expected identifier")
+                            .with_labels(vec![Label::primary(self.file_id, span)
+                                .with_message("Expected an identifier for array indexing")]),
+                    );
+                    Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Expected identifier",
+                    )))
+                }
+            },
+            Expr::MemberAccess { name, member, span } => match *name {
+                Expr::Iden { val, span } => {
+                    if !self.decls.is_declared(&val) {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Variable not declared")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(format!("Variable {} is not declared", val))]),
+                        );
+                    }
+                    let struct_decl_data = self.decls.get_struct(&val);
+                    if let Some(struct_data) = struct_decl_data {
+                        let member_type = struct_data.find_member_type(&val);
+                        if let Some(member_type) = member_type {
+                            Ok(*member_type)
+                        } else {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Struct member not declared")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(format!(
+                                            "Struct member {} is not declared",
+                                            val
+                                        ))]),
+                            );
+                            Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Struct member not declared",
+                            )))
+                        }
+                    } else {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Struct not declared")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(format!("Struct {} is not declared", val))]),
+                        );
+                        Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Struct not declared",
+                        )))
+                    }
+                }
+                _ => {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Expected identifier")
+                            .with_labels(vec![Label::primary(self.file_id, span)
+                                .with_message("Expected an identifier for struct member access")]),
+                    );
+                    Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        "Expected identifier",
+                    )))
+                }
+            },
+            Expr::UnaryOp { op, expr, span } => {
+                let expr_type = self.typecheck_expr(*expr)?;
+                match op {
+                    UnaryOp::Dec | UnaryOp::Inc | UnaryOp::BitNot => match expr_type {
+                        Type::Builtin(BuiltinType::I8) => Ok(Type::Builtin(BuiltinType::I8)),
+                        Type::Builtin(BuiltinType::I16) => Ok(Type::Builtin(BuiltinType::I16)),
+                        Type::Builtin(BuiltinType::I32) => Ok(Type::Builtin(BuiltinType::I32)),
+                        Type::Builtin(BuiltinType::I64) => Ok(Type::Builtin(BuiltinType::I64)),
+                        Type::Builtin(BuiltinType::U8) => Ok(Type::Builtin(BuiltinType::U8)),
+                        Type::Builtin(BuiltinType::U16) => Ok(Type::Builtin(BuiltinType::U16)),
+                        Type::Builtin(BuiltinType::U32) => Ok(Type::Builtin(BuiltinType::U32)),
+                        Type::Builtin(BuiltinType::U64) => Ok(Type::Builtin(BuiltinType::U64)),
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Expected integer type")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected an integer type for decrement operation",
+                                        )]),
+                            );
+                            Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Expected integer type",
+                            )))
+                        }
+                    },
+                    UnaryOp::Neg | UnaryOp::Pos => match expr_type {
+                        Type::Builtin(BuiltinType::I8) => Ok(Type::Builtin(BuiltinType::I8)),
+                        Type::Builtin(BuiltinType::I16) => Ok(Type::Builtin(BuiltinType::I16)),
+                        Type::Builtin(BuiltinType::I32) => Ok(Type::Builtin(BuiltinType::I32)),
+                        Type::Builtin(BuiltinType::I64) => Ok(Type::Builtin(BuiltinType::I64)),
+                        Type::Builtin(BuiltinType::F32) => Ok(Type::Builtin(BuiltinType::F32)),
+                        Type::Builtin(BuiltinType::F64) => Ok(Type::Builtin(BuiltinType::F64)),
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Expected numeric type which also supports signs")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected a numeric type for negation operation",
+                                        )]),
+                            );
+                            Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Expected numeric type",
+                            )))
+                        }
+                    },
+                    UnaryOp::Ref => Ok(Type::Pointer(Box::new(expr_type))),
+                    UnaryOp::Deref => match expr_type {
+                        Type::Pointer(ty) => Ok(*ty),
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Expected pointer type")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected a pointer type for dereference operation",
+                                        )]),
+                            );
+                            Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Expected pointer type",
+                            )))
+                        }
+                    },
+                    UnaryOp::Not => match expr_type {
+                        Type::Builtin(BuiltinType::Bln) => Ok(Type::Builtin(BuiltinType::Bln)),
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Expected boolean type")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected a boolean type for logical not operation",
+                                        )]),
+                            );
+                            Err(Box::new(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                "Expected boolean type",
+                            )))
+                        }
+                    },
+                }
+            }
+        }
     }
 }
