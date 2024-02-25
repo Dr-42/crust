@@ -409,12 +409,10 @@ UserDefined: Box<Type> = {
 	<name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
 		name: name,
 		generic_args: Some(args),
-		variant: None,
 	}),
 	<name:Iden> => Box::new(Type::UserDefined {
 		name: name,
 		generic_args: None,
-		variant: None,
 	}),
 };
 

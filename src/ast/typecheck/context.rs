@@ -443,6 +443,7 @@ impl TypecheckContext {
                     Some(generics)
                 };
                 let mut flds = Vec::new();
+                let mut field_names = Vec::new();
 
                 for field in fields {
                     match *field {
@@ -454,7 +455,7 @@ impl TypecheckContext {
                         } => {
                             match *name {
                                 Expr::Iden { val, span } => {
-                                    if self.decls.is_declared(&val) {
+                                    if field_names.contains(&val) {
                                         self.errors.push(
                                             Diagnostic::error()
                                                 .with_message("Struct field already declared")
@@ -496,10 +497,11 @@ impl TypecheckContext {
                                         }
                                     }
                                     flds.push(VarDeclData {
-                                        name: val,
+                                        name: val.clone(),
                                         ty: ty.clone(),
                                         span,
                                     });
+                                    field_names.push(val);
                                 }
                                 _ => {
                                     self.errors.push(
@@ -546,7 +548,28 @@ impl TypecheckContext {
         methods: Vec<Box<Stmt>>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        if self.func_ret_type.is_some() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("impl blocks are only allowed at the top level")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
+        match ty {
+            Type::UserDefined { name, .. } => {
+                todo!()
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected user defined type")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected a user defined type for impl block")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_trait_decl(
@@ -564,7 +587,75 @@ impl TypecheckContext {
         variants: Vec<String>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        if self.func_ret_type.is_some() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("enum blocks are only allowed at the top level")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
+        match name {
+            Expr::Iden { val, span } => {
+                if self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Enum already declared")
+                            .with_labels(vec![
+                                Label::primary(self.file_id, span)
+                                    .with_message(format!("Enum {} is already declared", val)),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_enum_span(&val).unwrap(),
+                                )
+                                .with_message("First declaration here"),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_enum_span(&val).unwrap(),
+                                ),
+                                Label::secondary(self.file_id, span)
+                                    .with_message("Second declaration here"),
+                            ]),
+                    );
+                }
+                let variants = variants.iter().map(|v| v.clone()).collect::<Vec<_>>();
+                if variants.is_empty() {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Enum has no variants")
+                            .with_labels(vec![Label::primary(self.file_id, span).with_message(
+                                "Expected at least one variant for enum declaration",
+                            )]),
+                    );
+                }
+                // Check for duplicate variants
+                let mut seen = Vec::new();
+                for variant in &variants {
+                    if seen.contains(variant) {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Duplicate enum variant")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(format!(
+                                        "Enum variant {} is already declared",
+                                        variant
+                                    ))]),
+                        );
+                    }
+                    seen.push(variant.to_string());
+                }
+                self.decls.add_enum(val, variants, span);
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for enum declaration")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_union_decl(
@@ -573,9 +664,91 @@ impl TypecheckContext {
         fields: Vec<(Box<Expr>, Type)>,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        match name {
+            Expr::Iden { val, span } => {
+                if self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Union already declared")
+                            .with_labels(vec![
+                                Label::primary(self.file_id, span)
+                                    .with_message(format!("Union {} is already declared", val)),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_union_span(&val).unwrap(),
+                                )
+                                .with_message("First declaration here"),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_union_span(&val).unwrap(),
+                                ),
+                                Label::secondary(self.file_id, span)
+                                    .with_message("Second declaration here"),
+                            ]),
+                    );
+                }
+                let mut flds = Vec::new();
+                let mut field_names = Vec::new();
+
+                for (field, ty) in fields {
+                    match *field {
+                        Expr::Iden { val, span } => {
+                            if field_names.contains(&val) {
+                                self.errors.push(
+                                    Diagnostic::error()
+                                        .with_message("Union field already declared")
+                                        .with_labels(vec![
+                                            Label::primary(self.file_id, span).with_message(
+                                                format!("Union field {} is already declared", val),
+                                            ),
+                                            Label::secondary(
+                                                self.file_id,
+                                                self.decls.get_var_span(&val).unwrap(),
+                                            )
+                                            .with_message("First declaration here"),
+                                            Label::secondary(
+                                                self.file_id,
+                                                self.decls.get_var_span(&val).unwrap(),
+                                            ),
+                                            Label::secondary(self.file_id, span)
+                                                .with_message("Second declaration here"),
+                                        ]),
+                                );
+                            }
+                            flds.push(VarDeclData {
+                                name: val.clone(),
+                                ty: Box::new(ty.clone()),
+                                span,
+                            });
+                            field_names.push(val);
+                        }
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Expected identifier")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected an identifier for union field declaration",
+                                        )]),
+                            );
+                        }
+                    }
+                }
+                self.decls.add_union(val, flds, span);
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for union declaration")]),
+                );
+            }
+        }
+        Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn typecheck_function_decl(
         &mut self,
         name: Expr,
@@ -586,27 +759,259 @@ impl TypecheckContext {
         isvararg: bool,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        if self.func_ret_type.is_some() {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("Function declarations are only allowed at the top level")
+                    .with_labels(vec![Label::primary(self.file_id, span)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
+        match name {
+            Expr::Iden { val, span } => {
+                if self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Function already declared")
+                            .with_labels(vec![
+                                Label::primary(self.file_id, span)
+                                    .with_message(format!("Function {} is already declared", val)),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_function_span(&val).unwrap(),
+                                )
+                                .with_message("First declaration here"),
+                                Label::secondary(
+                                    self.file_id,
+                                    self.decls.get_function_span(&val).unwrap(),
+                                ),
+                                Label::secondary(self.file_id, span)
+                                    .with_message("Second declaration here"),
+                            ]),
+                    );
+                }
+                let generics = generics
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|g| *g.clone())
+                    .collect::<Vec<_>>();
+                let generics = if generics.is_empty() {
+                    None
+                } else {
+                    Some(generics)
+                };
+
+                let mut arg_names = Vec::new();
+                let mut arg_types = Vec::new();
+                let mut arg_arrays = Vec::new();
+
+                for arg in args {
+                    match *arg {
+                        Stmt::VarDecl {
+                            name,
+                            ty,
+                            value,
+                            span,
+                        } => {
+                            match *name {
+                                Expr::Iden { val, span } => {
+                                    if arg_names.contains(&val) {
+                                        self.errors.push(
+                                            Diagnostic::error()
+                                                .with_message("Function argument already declared")
+                                                .with_labels(vec![
+                                                    Label::primary(self.file_id, span)
+                                                        .with_message(format!(
+                                                        "Function argument {} is already declared",
+                                                        val
+                                                    )),
+                                                    Label::secondary(
+                                                        self.file_id,
+                                                        self.decls.get_var_span(&val).unwrap(),
+                                                    )
+                                                    .with_message("First declaration here"),
+                                                    Label::secondary(
+                                                        self.file_id,
+                                                        self.decls.get_var_span(&val).unwrap(),
+                                                    ),
+                                                    Label::secondary(self.file_id, span)
+                                                        .with_message("Second declaration here"),
+                                                ]),
+                                        );
+                                    }
+                                    if let Some(value) = value {
+                                        let value_type = self.typecheck_expr(*value.clone())?;
+                                        if value_type != *ty {
+                                            self.errors.push(
+                                                Diagnostic::error()
+                                                    .with_message("Expected value type to match argument type")
+                                                    .with_labels(vec![Label::primary(
+                                                        self.file_id,
+                                                        value.span(),
+                                                    )
+                                                    .with_message(format!(
+                                                        "Expected value type to be {:?}, found {:?}",
+                                                        ty, value_type
+                                                    ))]),
+                                            );
+                                        }
+                                    }
+                                    arg_names.push(val);
+                                    arg_types.push(ty);
+                                    arg_arrays.push(VarDeclData {
+                                        name: val.clone(),
+                                        ty: ty.clone(),
+                                        span,
+                                    });
+                                }
+                                _ => {
+                                    self.errors.push(
+                                        Diagnostic::error()
+                                            .with_message("Expected identifier")
+                                            .with_labels(vec![Label::primary(self.file_id, span)
+                                            .with_message(
+                                            "Expected an identifier for function argument declaration",
+                                        )]),
+                                    );
+                                }
+                            }
+                        }
+                        _ => {
+                            self.errors.push(
+                                Diagnostic::error()
+                                    .with_message("Unexpected function argument declaration")
+                                    .with_labels(vec![Label::primary(self.file_id, span)
+                                        .with_message(
+                                            "Expected a variable type pair with optional initial value for function argument",
+                                        )]),
+                            );
+                        }
+                    }
+                }
+
+                if let Some(body) = body {
+                    self.func_ret_type = Some(ret.clone());
+                    self.decls.add_function(
+                        val,
+                        generics,
+                        arg_arrays,
+                        Box::new(ret),
+                        isvararg,
+                        span,
+                    );
+                    self.decls.checkpoint();
+                    self.typecheck_stmt(*body)?;
+                    self.decls.rollback();
+                    self.func_ret_type = None;
+                } else {
+                    self.decls.add_function(
+                        val,
+                        generics,
+                        arg_arrays,
+                        Box::new(ret),
+                        isvararg,
+                        span,
+                    );
+                }
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for function declaration")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_var_assign(
         &mut self,
         name: Expr,
         value: Expr,
-        op: AssignOp,
+        _op: AssignOp,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        match name {
+            Expr::Iden { val, span } => {
+                if !self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Variable not declared")
+                            .with_labels(vec![Label::primary(self.file_id, span)
+                                .with_message(format!("Variable {} is not declared", val))]),
+                    );
+                }
+                let var_type = self.decls.get_var_type(&val).unwrap();
+                let value_type = self.typecheck_expr(value.clone())?;
+
+                if value_type != *var_type {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Expected value type to match variable type")
+                            .with_labels(vec![Label::primary(self.file_id, value.span())
+                                .with_message(format!(
+                                    "Expected value type to be {:?}, found {:?}",
+                                    var_type, value_type
+                                ))]),
+                    );
+                }
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for variable assignment")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_deref_assign(
         &mut self,
         value: Expr,
         expr: Expr,
-        op: AssignOp,
+        _op: AssignOp,
         span: Span,
     ) -> Result<(), Box<dyn Error>> {
-        todo!()
+        match value {
+            Expr::Iden { val, span } => {
+                if !self.decls.is_declared(&val) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Variable not declared")
+                            .with_labels(vec![Label::primary(self.file_id, span)
+                                .with_message(format!("Variable {} is not declared", val))]),
+                    );
+                }
+                let var_type = self.decls.get_var_type(&val).unwrap();
+                let expr_type = self.typecheck_expr(expr.clone())?;
+
+                if *var_type != Type::Pointer(Box::new(expr_type.clone())) {
+                    self.errors.push(
+                        Diagnostic::error()
+                            .with_message("Expected value type to match variable type")
+                            .with_labels(vec![Label::primary(self.file_id, expr.span())
+                                .with_message(format!(
+                                    "Expected value type to be {:?}, found {:?}",
+                                    var_type, expr_type
+                                ))]),
+                    );
+                }
+            }
+            _ => {
+                self.errors.push(
+                    Diagnostic::error()
+                        .with_message("Expected identifier")
+                        .with_labels(vec![Label::primary(self.file_id, span)
+                            .with_message("Expected an identifier for dereference assignment")]),
+                );
+            }
+        }
+        Ok(())
     }
 
     fn typecheck_struct_assign(
@@ -659,11 +1064,27 @@ impl TypecheckContext {
     }
 
     fn typecheck_break(&mut self) -> Result<(), Box<dyn Error>> {
-        todo!()
+        if !self.in_loop {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("break statements are only allowed inside loops")
+                    .with_labels(vec![Label::primary(self.file_id, 0..0)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
+        Ok(())
     }
 
     fn typecheck_continue(&mut self) -> Result<(), Box<dyn Error>> {
-        todo!()
+        if !self.in_loop {
+            self.errors.push(
+                Diagnostic::error()
+                    .with_message("continue statements are only allowed inside loops")
+                    .with_labels(vec![Label::primary(self.file_id, 0..0)
+                        .with_message("This statement is not allowed here")]),
+            );
+        }
+        Ok(())
     }
 
     fn typecheck_expr(&mut self, expr: Expr) -> Result<Type, Box<dyn Error>> {
