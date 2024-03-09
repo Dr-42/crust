@@ -2,7 +2,7 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 use crate::ast::{
     decldata::{DeclData, VarDeclData},
-    nodes::{AssignOp, BuiltinType, Expr, GenericType, Program, Stmt, Type, UnaryOp},
+    nodes::{AssignOp, BinaryOp, BuiltinType, Expr, GenericType, Program, Stmt, Type, UnaryOp},
     Span,
 };
 
@@ -900,6 +900,10 @@ impl TypecheckContext {
                         span,
                     );
                     self.decls.checkpoint();
+                    // Add arguments to scope
+                    for (name, ty) in arg_names.iter().zip(arg_types.iter()) {
+                        self.decls.add_var(name.clone(), ty.clone(), span);
+                    }
                     self.typecheck_stmt(*body)?;
                     self.decls.rollback();
                     self.func_ret_type = None;
@@ -1103,7 +1107,14 @@ impl TypecheckContext {
                                 .with_message(format!("Variable {} is not declared", val))]),
                     );
                 }
-                Ok(*self.decls.get_var_type(&val).unwrap().clone())
+                if let Some(var_type) = self.decls.get_var_type(&val) {
+                    Ok(*var_type)
+                } else {
+                    Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        format!("Variable {} not declared", val),
+                    )))
+                }
             }
             Expr::Call {
                 name,
@@ -1311,6 +1322,103 @@ impl TypecheckContext {
                     },
                 }
             }
+            Expr::BinaryOp { lhs, op, rhs, span } => match op {
+                BinaryOp::Add | BinaryOp::Sub | BinaryOp::Mul | BinaryOp::Div => {
+                    let lhs_type = self.typecheck_expr(*lhs)?;
+                    let rhs_type = self.typecheck_expr(*rhs)?;
+                    // Check if it a default builinin numeric (both int and float) type or a pointer
+                    if lhs_type.is_numeric() && rhs_type.is_numeric() {
+                        Type::super_type(&lhs_type, &rhs_type)
+                    } else if lhs_type.is_pointer() && rhs_type.is_numeric() {
+                        Ok(lhs_type)
+                    } else if lhs_type.is_numeric() && rhs_type.is_pointer() {
+                        Ok(rhs_type)
+                    } else if lhs_type.is_user_defined() && rhs_type.is_user_defined() {
+                        todo!()
+                    } else {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Expected numeric or pointer type")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(
+                                        "Expected a numeric or pointer type for addition operation",
+                                    )]),
+                        );
+                        Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Expected numeric or pointer type",
+                        )))
+                    }
+                }
+                BinaryOp::Mod | BinaryOp::BitAnd | BinaryOp::BitOr | BinaryOp::BitXor => {
+                    let lhs_type = self.typecheck_expr(*lhs)?;
+                    let rhs_type = self.typecheck_expr(*rhs)?;
+                    if lhs_type.is_integer() && rhs_type.is_integer() {
+                        Type::super_type(&lhs_type, &rhs_type)
+                    } else {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Expected integer type")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(
+                                        "Expected an integer type for bitwise operation",
+                                    )]),
+                        );
+                        Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Expected integer type",
+                        )))
+                    }
+                }
+                BinaryOp::Shl | BinaryOp::Shr => {
+                    let lhs_type = self.typecheck_expr(*lhs)?;
+                    let rhs_type = self.typecheck_expr(*rhs)?;
+                    if lhs_type.is_integer() && rhs_type.is_integer() {
+                        Ok(lhs_type)
+                    } else {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Expected integer type")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(
+                                        "Expected an integer type for bitwise shift operation",
+                                    )]),
+                        );
+                        Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Expected integer type",
+                        )))
+                    }
+                }
+                BinaryOp::Eq
+                | BinaryOp::Neq
+                | BinaryOp::Lt
+                | BinaryOp::Gt
+                | BinaryOp::Lte
+                | BinaryOp::Gte
+                | BinaryOp::And
+                | BinaryOp::Or => {
+                    let lhs_type = self.typecheck_expr(*lhs)?;
+                    let rhs_type = self.typecheck_expr(*rhs)?;
+                    if lhs_type == rhs_type {
+                        Ok(Type::Builtin(BuiltinType::Bln))
+                    } else {
+                        self.errors.push(
+                            Diagnostic::error()
+                                .with_message("Expected types to be equal")
+                                .with_labels(vec![Label::primary(self.file_id, span)
+                                    .with_message(format!(
+                                        "Expected types to be equal, found {:?} and {:?}",
+                                        lhs_type, rhs_type
+                                    ))]),
+                        );
+                        Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidData,
+                            "Expected types to be equal",
+                        )))
+                    }
+                }
+            },
         }
     }
 }

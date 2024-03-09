@@ -1,4 +1,6 @@
-use super::{decldata::DeclData, Span};
+use std::error::Error;
+
+use super::Span;
 
 pub enum Comment {
     SingleLine(String),
@@ -57,6 +59,84 @@ pub enum Type {
     },
 }
 
+impl Type {
+    pub fn is_numeric(&self) -> bool {
+        matches!(
+            self,
+            Type::Builtin(BuiltinType::I8)
+                | Type::Builtin(BuiltinType::I16)
+                | Type::Builtin(BuiltinType::I32)
+                | Type::Builtin(BuiltinType::I64)
+                | Type::Builtin(BuiltinType::U8)
+                | Type::Builtin(BuiltinType::U16)
+                | Type::Builtin(BuiltinType::U32)
+                | Type::Builtin(BuiltinType::U64)
+                | Type::Builtin(BuiltinType::F32)
+                | Type::Builtin(BuiltinType::F64)
+        )
+    }
+
+    pub fn is_pointer(&self) -> bool {
+        matches!(self, Type::Pointer(_))
+    }
+
+    pub fn is_integer(&self) -> bool {
+        matches!(
+            self,
+            Type::Builtin(BuiltinType::I8)
+                | Type::Builtin(BuiltinType::I16)
+                | Type::Builtin(BuiltinType::I32)
+                | Type::Builtin(BuiltinType::I64)
+                | Type::Builtin(BuiltinType::U8)
+                | Type::Builtin(BuiltinType::U16)
+                | Type::Builtin(BuiltinType::U32)
+                | Type::Builtin(BuiltinType::U64)
+        )
+    }
+
+    pub fn is_float(&self) -> bool {
+        matches!(
+            self,
+            Type::Builtin(BuiltinType::F32) | Type::Builtin(BuiltinType::F64)
+        )
+    }
+
+    pub fn is_user_defined(&self) -> bool {
+        matches!(self, Type::UserDefined { .. })
+    }
+
+    pub fn super_type(t1: &Type, t2: &Type) -> Result<Type, Box<dyn Error>> {
+        if t1 == t2 {
+            return Ok(t1.clone());
+        }
+
+        if t1.is_numeric() && t2.is_numeric() {
+            if t1.is_float() || t2.is_float() {
+                return match (t1, t2) {
+                    (Type::Builtin(BuiltinType::F32), _) => Ok(t1.clone()),
+                    (_, Type::Builtin(BuiltinType::F32)) => Ok(t2.clone()),
+                    (Type::Builtin(BuiltinType::F64), _) => Ok(t1.clone()),
+                    (_, Type::Builtin(BuiltinType::F64)) => Ok(t2.clone()),
+                    _ => Ok(Type::Builtin(BuiltinType::F64)),
+                };
+            }
+            return match (t1, t2) {
+                (Type::Builtin(BuiltinType::I64), _) => Ok(t1.clone()),
+                (_, Type::Builtin(BuiltinType::I64)) => Ok(t2.clone()),
+                (Type::Builtin(BuiltinType::I32), _) => Ok(t1.clone()),
+                (_, Type::Builtin(BuiltinType::I32)) => Ok(t2.clone()),
+                (Type::Builtin(BuiltinType::I16), _) => Ok(t1.clone()),
+                (_, Type::Builtin(BuiltinType::I16)) => Ok(t2.clone()),
+                (Type::Builtin(BuiltinType::I8), _) => Ok(t1.clone()),
+                (_, Type::Builtin(BuiltinType::I8)) => Ok(t2.clone()),
+                _ => Ok(Type::Builtin(BuiltinType::I64)),
+            };
+        }
+
+        Err("No super type found".into())
+    }
+}
+
 #[derive(PartialEq, Clone, Debug)]
 pub enum UnaryOp {
     Dec,
@@ -83,7 +163,6 @@ pub enum BinaryOp {
     Gt,
     Gte,
     Eq,
-    Clone,
     Neq,
     BitAnd,
     BitXor,
