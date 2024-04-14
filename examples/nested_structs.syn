@@ -2,13 +2,13 @@ fnc print(a : str, ...) : void;
 
 struct barn {
 	zim: i32,
-	pot: str,
+	pot: str
 }
 
 struct fon {
 	foo: i32,
 	bar: i32,
-	bari: barn,
+	bari: barn
 }
 
 struct address {
@@ -16,14 +16,14 @@ struct address {
 	street: str,
 	state: str,
 	pin: i32,
-	foon: fon,
+	foon: fon
 }
 
 struct employee {
 	salary: f32,
 	name : str,
 	res : address,
-	id : i32,
+	id : i32
 }
 
 

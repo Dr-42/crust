@@ -2,7 +2,7 @@ fnc print(a: str, ...) : void;
 
 struct foo {
 	bar: str = "Nathan",
-	baz: i32 = 64,
+	baz: i32 = 64
 }
 
 fnc main() : i32 {
