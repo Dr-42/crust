@@ -142,9 +142,6 @@ impl TypecheckContext {
             } => {
                 self.typecheck_struct_member_assign(*name, *value, op, span)?;
             }
-            Stmt::ArrayAssign { name, value, span } => {
-                self.typecheck_array_assign(*name, value, span)?;
-            }
             Stmt::ArrayMemberAssign {
                 element,
                 value,
@@ -1038,15 +1035,6 @@ impl TypecheckContext {
         todo!()
     }
 
-    fn typecheck_array_assign(
-        &mut self,
-        name: Expr,
-        value: Vec<Box<Expr>>,
-        span: Span,
-    ) -> Result<(), Box<dyn Error>> {
-        todo!()
-    }
-
     fn typecheck_array_member_assign(
         &mut self,
         element: Expr,
@@ -1419,6 +1407,9 @@ impl TypecheckContext {
                     }
                 }
             },
+            Expr::ArrayExpr { elements, span } => {
+                todo!()
+            }
         }
     }
 }

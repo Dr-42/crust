@@ -24,7 +24,6 @@ Stmt: Box<Stmt> = {
 	DerefAssign,
 	StructAssign,
 	StructMemberAssign,
-	ArrayAssign,
 	ArrayMemberAssign,
 	TraitAssign,
 };
@@ -353,6 +352,14 @@ MemberAccess: Box<Expr> = {
 	},
 };
 
+ArrayExpr: Box<Expr> = {
+	#[precedence(level="0")]
+	<ls:@L> "[" <vals:Comma<Expr>> "]" <rs:@R> => Box::new(Expr::ArrayExpr {
+		elements: vals,
+		span: Span::new(ls as u32, rs as u32),
+	}),
+};
+
 Type: Box<Type> = {
 	BuilinType => Box::new(Type::Builtin(<>)),
 	Pointer => <>,
@@ -389,14 +396,25 @@ Pointer: Box<Type> = {
 };
 
 Array: Box<Type> = {
-	"[" <t:Type> ";" <s:r"[0-9]+"> "]" => Box::new(Type::Array {
+	"[" <t:Type> ";" <s:Semicolon<r"[0-9]+">> "]" => Box::new(Type::Array {
 		base: t,
-		length: s.parse().unwrap(),
+		// The s is a vector of strings, so we need to convert it a vector of numbers
+		lengths: s.into_iter().map(|x| FromStr::from_str(x).unwrap()).collect::<Vec<_>>(),
 	}),
 };
 
 Comma<T>: Vec<T> = {
     <mut v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+Semicolon<T>: Vec<T> = {
+    <mut v:(<T> ";")*> <e:T?> => match e { // (2)
         None => v,
         Some(e) => {
             v.push(e);
@@ -418,6 +436,12 @@ UserDefined: Box<Type> = {
 
 VarDecl: Box<Stmt> = {
 	<ls:@L> <name:Iden> ":" <t:Type> "=" <val:Expr> <rs:@R> => Box::new(Stmt::VarDecl {
+		name: name,
+		ty: t,
+		value: Some(val),
+		span: Span::new(ls as u32, rs as u32),
+	}),
+	<ls:@L> <name:Iden> ":" <t:Type> <rs:@R> "=" <val:ArrayExpr> => Box::new(Stmt::VarDecl {
 		name: name,
 		ty: t,
 		value: Some(val),
@@ -542,7 +566,7 @@ Plud<T>: Vec<T> = {
 
 GenericType: Box<GenericType> = {
 	<name:Iden> => Box::new(GenericType::new(name, None)),
-	<name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
+	//<name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
 };
 
 GenricDecl: Vec<Box<GenericType>> = {
@@ -773,14 +797,6 @@ StructMemberAssign: Box<Stmt> = {
 		name: name,
 		value: val,
 		op: AssignOp::ModAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-};
-
-ArrayAssign: Box<Stmt>  = {
-	<ls:@L> <name:Iden> "=" "[" <vals:Comma<Expr>> "]" ";" <rs:@R> => Box::new(Stmt::ArrayAssign {
-		name: name,
-		value: vals,
 		span: Span::new(ls as u32, rs as u32),
 	}),
 };

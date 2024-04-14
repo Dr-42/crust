@@ -55,7 +55,7 @@ pub enum Type {
     },
     Array {
         base: Box<Type>,
-        length: usize,
+        lengths: Vec<usize>,
     },
 }
 
@@ -234,6 +234,10 @@ pub enum Expr {
         member: Box<Expr>,
         span: Span,
     },
+    ArrayExpr {
+        elements: Vec<Box<Expr>>,
+        span: Span,
+    },
 }
 
 impl Expr {
@@ -250,6 +254,7 @@ impl Expr {
             Expr::Call { span, .. } => *span,
             Expr::Index { span, .. } => *span,
             Expr::MemberAccess { span, .. } => *span,
+            Expr::ArrayExpr { span, .. } => *span,
         }
     }
 }
@@ -345,11 +350,6 @@ pub enum Stmt {
         name: Box<Expr>,
         value: Box<Expr>,
         op: AssignOp,
-        span: Span,
-    },
-    ArrayAssign {
-        name: Box<Expr>,
-        value: Vec<Box<Expr>>,
         span: Span,
     },
     ArrayMemberAssign {
