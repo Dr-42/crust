@@ -398,13 +398,12 @@ Pointer: Box<Type> = {
 Array: Box<Type> = {
 	"[" <t:Type> ";" <s:Semicolon<r"[0-9]+">> "]" => Box::new(Type::Array {
 		base: t,
-		// The s is a vector of strings, so we need to convert it a vector of numbers
 		lengths: s.into_iter().map(|x| FromStr::from_str(x).unwrap()).collect::<Vec<_>>(),
 	}),
 };
 
 Comma<T>: Vec<T> = {
-    <mut v:(<T> ",")*> <e:T?> => match e { // (2)
+    <mut v:(<T> ",")*> <e:T?> => match e {
         None => v,
         Some(e) => {
             v.push(e);
@@ -414,7 +413,7 @@ Comma<T>: Vec<T> = {
 };
 
 Semicolon<T>: Vec<T> = {
-    <mut v:(<T> ";")*> <e:T?> => match e { // (2)
+    <mut v:(<T> ";")*> <e:T?> => match e {
         None => v,
         Some(e) => {
             v.push(e);
@@ -555,7 +554,7 @@ Break: Box<Stmt> = {
 };
 
 Plud<T>: Vec<T> = {
-	<mut v:(<T> "+")*> <e:T?> => match e { // (2)
+	<mut v:(<T> "+")*> <e:T?> => match e {
 		None => v,
 		Some(e) => {
 			v.push(e);
@@ -566,7 +565,7 @@ Plud<T>: Vec<T> = {
 
 GenericType: Box<GenericType> = {
 	<name:Iden> => Box::new(GenericType::new(name, None)),
-	//<name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
+	<name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
 };
 
 GenricDecl: Vec<Box<GenericType>> = {
