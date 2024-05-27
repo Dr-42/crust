@@ -399,6 +399,7 @@ MemberAccess: Box<Expr> = {
 Type: Box<Type> = {
 	BuilinType => Box::new(Type::Builtin(<>)),
 	Pointer => <>,
+	FnPtr => <>,
 	UserDefined => <>,
 	Array => <>,
 };
@@ -430,6 +431,13 @@ Pointer: Box<Type> = {
 		}
 		base
 	}
+};
+
+FnPtr: Box<Type> = {
+	"fnptr" "<" "(" <args:Comma<Type>> ")" ":" <ret:Type> ">" => Box::new(Type::FnPtr {
+		args: args,
+		ret: ret,
+	}),
 };
 
 Array: Box<Type> = {

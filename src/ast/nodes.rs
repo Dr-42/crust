@@ -48,6 +48,10 @@ pub enum UserDefinedType {
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
+    FnPtr {
+        args: Vec<Box<Type>>,
+        ret: Box<Type>,
+    },
     UserDefined {
         name: Box<Expr>,
         generic_args: Option<Vec<Box<Type>>>,
