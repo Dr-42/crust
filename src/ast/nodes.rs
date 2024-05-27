@@ -54,7 +54,7 @@ pub enum Type {
     },
     Array {
         base: Box<Type>,
-        length: usize,
+        lens: Vec<usize>,
     },
 }
 
@@ -156,6 +156,10 @@ pub enum Expr {
         member: Box<Expr>,
         span: Span,
     },
+    ArrayLiteral {
+        vals: Vec<Box<Expr>>,
+        span: Span,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -247,11 +251,6 @@ pub enum Stmt {
         name: Box<Expr>,
         value: Box<Expr>,
         op: AssignOp,
-        span: Span,
-    },
-    ArrayAssign {
-        name: Box<Expr>,
-        value: Vec<Box<Expr>>,
         span: Span,
     },
     ArrayMemberAssign {

@@ -27,7 +27,6 @@ Stmt: Box<Stmt> = {
 	DerefAssign,
 	StructAssign,
 	StructMemberAssign,
-	ArrayAssign,
 	ArrayMemberAssign,
 	TraitAssign,
 };
@@ -56,6 +55,7 @@ Expr: Box<Expr> = {
 	UnaryOp,
 	#[precedence(level="2")] #[assoc(side="left")]
 	BinaryOp,
+	ArrayLiteral,
 };
 
 Numeric: Box<Expr> = {
@@ -300,6 +300,26 @@ BinaryOp: Box<Expr> = {
 	}),
 };
 
+UntermComma<T> : Vec<T> = {
+	<mut v:(<T> ",")*> <e:T> => match e { // (2)
+		e => {
+			v.push(e);
+			v
+		}
+	}
+};
+
+ArrayLiteral : Box<Expr> = {
+	<ls:@L> "[" <vals:UntermComma<Expr>> "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
+		vals: vals,
+		span: Span::new(ls as u32, rs as u32),
+	}),
+	<ls:@L> "[" "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
+		vals: vec![],
+		span: Span::new(ls as u32, rs as u32),
+	}),
+};
+
 Call: Box<Expr> = {
 	<ls:@L> <name:Iden> "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
 		name: name,
@@ -384,11 +404,23 @@ Pointer: Box<Type> = {
 	}
 };
 
+Semid<T>: Vec<T> = {
+	<mut v:(<T> ";")*> <e:T> => match e { // (2)
+		e => {
+			v.push(e);
+			v
+		}
+	}
+};
+
 Array: Box<Type> = {
-	"[" <t:Type> ";" <s:r"[0-9]+"> "]" => Box::new(Type::Array {
-		base: t,
-		length: s.parse().unwrap(),
-	}),
+	"[" <t:Type> ";" <s:Semid<r"[0-9]+">> "]" => {
+	let len = s.iter().map(|x| FromStr::from_str(x).unwrap()).collect();
+		Box::new(Type::Array {
+			base: t,
+			lens: len,
+		})
+	},
 };
 
 Comma<T>: Vec<T> = {
@@ -520,12 +552,9 @@ Break: Box<Stmt> = {
 };
 
 Plud<T>: Vec<T> = {
-	<mut v:(<T> "+")*> <e:T?> => match e { // (2)
-		None => v,
-		Some(e) => {
-			v.push(e);
-			v
-		}
+	<mut v:(<T> "+")*> <e:T> => { // (2)
+		v.push(e);
+		v
 	}
 };
 
@@ -762,14 +791,6 @@ StructMemberAssign: Box<Stmt> = {
 		name: name,
 		value: val,
 		op: AssignOp::ModAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-};
-
-ArrayAssign: Box<Stmt>  = {
-	<ls:@L> <name:Iden> "=" "[" <vals:Comma<Expr>> "]" ";" <rs:@R> => Box::new(Stmt::ArrayAssign {
-		name: name,
-		value: vals,
 		span: Span::new(ls as u32, rs as u32),
 	}),
 };
