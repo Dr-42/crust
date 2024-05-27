@@ -22,6 +22,7 @@ pub enum BuiltinType {
     Chr,
     Bln,
     Str,
+    Slf,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -244,7 +245,6 @@ pub enum Stmt {
     StructAssign {
         name: Box<Expr>,
         ty: Option<Box<Type>>,
-        sname: Box<Expr>,
         fields: Vec<(Box<Expr>, Box<Expr>)>,
         span: Span,
     },

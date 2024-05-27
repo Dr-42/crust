@@ -34,7 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     let mut files = SimpleFiles::new();
-                    let file_id = files.add("main", &text);
+                    let file_name = path.file_name().unwrap().to_str().unwrap();
+                    let file_id = files.add(file_name, &text);
                     eprintln!("Error parsing file: {:?}", path);
                     let diag = Diagnostic::error()
                         .with_message(e.message)

@@ -418,6 +418,7 @@ BuilinType: BuiltinType = {
 	"chr" => BuiltinType::Chr,
 	"bln" => BuiltinType::Bln,
 	"str" => BuiltinType::Str,
+	"Self" => BuiltinType::Slf,
 };
 
 Pointer: Box<Type> = {
@@ -749,17 +750,15 @@ NameVal: (Box<Expr>, Box<Expr>) = {
 };
 
 StructAssign: Box<Stmt> = {
-	<ls:@L> <name:Iden> "=" <sname:Iden> "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
+	<ls:@L> <name:Iden> "=" "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
 		name: name,
 		ty: None,
-		sname: sname,
 		fields: fields,
 		span: Span::new(ls as u32, rs as u32),
 	}),
-	<ls:@L> <name:Iden> ":" <ty:Type> "=" <sname:Iden> "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
+	<ls:@L> <name:Iden> ":" <ty:Type> "=" "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
 		name: name,
 		ty: Some(ty),
-		sname: sname,
 		fields: fields,
 		span: Span::new(ls as u32, rs as u32),
 	}),
