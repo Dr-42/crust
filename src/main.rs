@@ -1,5 +1,13 @@
 use std::error::Error;
 
+use codespan_reporting::{
+    diagnostic::{Diagnostic, Label},
+    files::SimpleFiles,
+    term::{
+        self,
+        termcolor::{ColorChoice, StandardStream},
+    },
+};
 use lalrpop_util::lalrpop_mod;
 
 pub mod ast;
@@ -25,8 +33,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("Pass: {:?}", path);
                 }
                 Err(e) => {
+                    let mut files = SimpleFiles::new();
+                    let file_id = files.add("main", &text);
                     eprintln!("Error parsing file: {:?}", path);
-                    eprintln!("{:?}", e);
+                    let diag = Diagnostic::error()
+                        .with_message(e.message)
+                        .with_labels(vec![Label::primary(file_id, e.span).with_message("Error")]);
+
+                    let writer = StandardStream::stderr(ColorChoice::Always);
+                    let config = codespan_reporting::term::Config::default();
+
+                    term::emit(&mut writer.lock(), &config, &files, &diag)?;
                 }
             }
         }

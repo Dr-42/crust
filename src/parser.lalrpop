@@ -4,6 +4,42 @@ use crate::ast::Span;
 
 grammar;
 
+UntermComma<T> : Vec<T> = {
+	<mut v:(<T> ",")*> <e:T> => match e { // (2)
+		e => {
+			v.push(e);
+			v
+		}
+	}
+};
+
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+Plud<T>: Vec<T> = {
+	<mut v:(<T> "+")*> <e:T> => { // (2)
+		v.push(e);
+		v
+	}
+};
+
+Semid<T>: Vec<T> = {
+	<mut v:(<T> ";")*> <e:T> => match e { // (2)
+		e => {
+			v.push(e);
+			v
+		}
+	}
+};
+
+
 pub Program: Box<Program> = {
 	(Stmt)+ => Box::new(Program::new(<>)),
 };
@@ -300,15 +336,6 @@ BinaryOp: Box<Expr> = {
 	}),
 };
 
-UntermComma<T> : Vec<T> = {
-	<mut v:(<T> ",")*> <e:T> => match e { // (2)
-		e => {
-			v.push(e);
-			v
-		}
-	}
-};
-
 ArrayLiteral : Box<Expr> = {
 	<ls:@L> "[" <vals:UntermComma<Expr>> "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
 		vals: vals,
@@ -404,15 +431,6 @@ Pointer: Box<Type> = {
 	}
 };
 
-Semid<T>: Vec<T> = {
-	<mut v:(<T> ";")*> <e:T> => match e { // (2)
-		e => {
-			v.push(e);
-			v
-		}
-	}
-};
-
 Array: Box<Type> = {
 	"[" <t:Type> ";" <s:Semid<r"[0-9]+">> "]" => {
 	let len = s.iter().map(|x| FromStr::from_str(x).unwrap()).collect();
@@ -421,16 +439,6 @@ Array: Box<Type> = {
 			lens: len,
 		})
 	},
-};
-
-Comma<T>: Vec<T> = {
-    <mut v:(<T> ",")*> <e:T?> => match e { // (2)
-        None => v,
-        Some(e) => {
-            v.push(e);
-            v
-        }
-    }
 };
 
 UserDefined: Box<Type> = {
@@ -549,13 +557,6 @@ Continue: Box<Stmt> = {
 
 Break: Box<Stmt> = {
 	"brk" ";" => Box::new(Stmt::Break),
-};
-
-Plud<T>: Vec<T> = {
-	<mut v:(<T> "+")*> <e:T> => { // (2)
-		v.push(e);
-		v
-	}
 };
 
 GenericType: Box<GenericType> = {
@@ -743,13 +744,21 @@ DerefAssign: Box<Stmt> = {
 	}),
 };
 
-NameVal: (Box<Expr>, Box<Stmt>) = {
-	<name:Iden> "=" <val:Stmt> => (name, val),
+NameVal: (Box<Expr>, Box<Expr>) = {
+	<name:Iden> "=" <val:Expr> => (name, val),
 };
 
 StructAssign: Box<Stmt> = {
 	<ls:@L> <name:Iden> "=" <sname:Iden> "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
 		name: name,
+		ty: None,
+		sname: sname,
+		fields: fields,
+		span: Span::new(ls as u32, rs as u32),
+	}),
+	<ls:@L> <name:Iden> ":" <ty:Type> "=" <sname:Iden> "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
+		name: name,
+		ty: Some(ty),
 		sname: sname,
 		fields: fields,
 		span: Span::new(ls as u32, rs as u32),
@@ -835,7 +844,7 @@ ArrayMemberAssign: Box<Stmt> = {
 };
 
 TraitAssign: Box<Stmt> = {
-	<ls:@L> "trait" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitAssign {
+	<ls:@L> "impl" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitAssign {
 		name: name,
 		for_ty: ty,
 		methods: methods,

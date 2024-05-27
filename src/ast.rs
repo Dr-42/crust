@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use crate::parser;
 
 pub mod decldata;
@@ -38,9 +36,35 @@ pub fn preremove_comments(text: String) -> String {
     result
 }
 
-pub fn parse(text: &str) -> Result<Box<nodes::Program>, Box<dyn Error>> {
+#[derive(Debug)]
+pub struct MyparseError {
+    pub span: Span,
+    pub token: Option<String>,
+    pub message: String,
+}
+
+pub fn parse(text: &str) -> Result<Box<nodes::Program>, MyparseError> {
     let text = preremove_comments(text.to_string());
     let parser = parser::ProgramParser::new();
-    let res = parser.parse(&text).map_err(|e| format!("{:?}", e))?;
-    Ok(res)
+    let res = parser.parse(&text);
+    match res {
+        Ok(program) => Ok(program),
+        Err(e) => {
+            let (span, token) = match e {
+                lalrpop_util::ParseError::InvalidToken { location } => {
+                    (Span::new(location as u32, location as u32 + 1), None)
+                }
+                lalrpop_util::ParseError::UnrecognizedToken { token, .. } => (
+                    Span::new(token.0 as u32, token.2 as u32),
+                    Some(token.1.to_string()),
+                ),
+                _ => (Span::new(0, 0), None),
+            };
+            Err(MyparseError {
+                span,
+                token,
+                message: "Parse error".to_string(),
+            })
+        }
+    }
 }

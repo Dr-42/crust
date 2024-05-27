@@ -1,0 +1,39 @@
+fnc print(a : str, ...) : void;
+
+trait Add {
+	fnc sum(a : Self, b : Self) : Self;
+}
+
+struct Point {
+	x : i32,
+	y : i32,
+}
+
+impl Add for Point {
+	fnc sum(a: Self, b: Self) : Self {
+		return : Self;
+		return = Self {
+			x = a.x + b.x,
+			y = a.y + b.y,
+		};
+
+		ret return;
+	}
+}
+
+fnc main() : i32 {
+	pta : Point = Point {
+		x = 20,
+		y = 40,
+	};
+
+	ptb = Point {
+		x = 50,
+		y = 60,
+	};
+
+	ptc : Point;
+	ptc = pta + ptb;
+	print("x : %d, y = %d", ptc.x, ptc.y);
+	ret 0;
+}
