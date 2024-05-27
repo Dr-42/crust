@@ -45,10 +45,9 @@ pub Program: Box<Program> = {
 };
 
 Stmt: Box<Stmt> = {
-	#[precedence(level="0")]
 	<t:VarDecl> ";" => t,
-	#[precedence(level="1")]
 	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
+	TypeAlias,
 	While,
 	Block,
 	For,
@@ -65,6 +64,14 @@ Stmt: Box<Stmt> = {
 	StructMemberAssign,
 	ArrayMemberAssign,
 	TraitAssign,
+};
+
+TypeAlias: Box<Stmt> = {
+	<ls:@L> "type" <t:Type> "is" <name:Iden> ";" <rs:@R> => Box::new(Stmt::TypeAlias {
+		name: name,
+		ty: t,
+		span: Span::new(ls as u32, rs as u32),
+	}),
 };
 
 Atom: Box<Expr> = {

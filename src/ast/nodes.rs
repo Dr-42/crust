@@ -170,6 +170,11 @@ pub enum Expr {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
     Expr(Box<Expr>),
+    TypeAlias {
+        name: Box<Expr>,
+        ty: Box<Type>,
+        span: Span,
+    },
     If {
         cond: Box<Expr>,
         body: Box<Stmt>,
