@@ -442,8 +442,12 @@ Pointer: Box<Type> = {
 };
 
 FnPtr: Box<Type> = {
-    "fnptr" "<" "(" <args:Comma<Type>> ")" ":" <ret:Type> ">" => Box::new(Type::FnPtr {
+    "fnptr" "<" "(" <args:comma<type>> ")" ":" <ret:type> ">" => box::new(type::fnptr {
         args: args,
+        ret: ret,
+    }),
+    "fnptr" "<" "(" ")" ":" <ret:type> ">" => box::new(type::fnptr {
+        args: Vec::new(),
         ret: ret,
     }),
 };
