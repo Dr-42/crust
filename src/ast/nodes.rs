@@ -170,6 +170,11 @@ pub enum Expr {
         vals: Vec<Box<Expr>>,
         span: Span,
     },
+    EnumLiteral {
+        name: Box<Expr>,
+        variant: Box<Expr>,
+        span: Span,
+    },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -228,7 +233,7 @@ pub enum Stmt {
     },
     EnumDecl {
         name: Box<Expr>,
-        variants: Vec<String>,
+        variants: Vec<Box<Expr>>,
         span: Span,
     },
     UnionDecl {

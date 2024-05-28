@@ -57,6 +57,7 @@ Stmt: Box<Stmt> = {
     Continue,
     Break,
     StructDecl,
+    EnumDecl,
     FunctionDecl,
     TraitDecl,
     VarAssign,
@@ -100,6 +101,7 @@ Expr: Box<Expr> = {
     #[precedence(level="2")] #[assoc(side="left")]
     BinaryOp,
     ArrayLiteral,
+    EnumLiteral,
 };
 
 Numeric: Box<Expr> = {
@@ -351,6 +353,14 @@ ArrayLiteral : Box<Expr> = {
     }),
     <ls:@L> "[" "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
         vals: vec![],
+        span: Span::new(ls as u32, rs as u32),
+    }),
+};
+
+EnumLiteral : Box<Expr> = {
+    <ls:@L> <name:Iden> "::" <variant:Iden> <rs:@R> => Box::new(Expr::EnumLiteral {
+        name: name,
+        variant: variant,
         span: Span::new(ls as u32, rs as u32),
     }),
 };
@@ -631,6 +641,14 @@ StructDecl: Box<Stmt> = {
         span: Span::new(ls as u32, rs as u32),
     }),
 };
+
+EnumDecl: Box<Stmt> = {
+    <l:@L> "enum" <name:Iden> "{" <variants:Comma<Iden>> "}" <r:@R> => Box::new(Stmt::EnumDecl {
+        name: name,
+        variants: variants,
+        span: Span::new(l as u32, r as u32),
+    }),
+}
 
 FunctionDecl: Box<Stmt> = {
     <ls:@L> <quals:Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {

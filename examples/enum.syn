@@ -1,0 +1,21 @@
+fnc print(a : str, ...) : void;
+
+enum Fruit {
+    Apple,
+    Banana,
+    Orange,
+}
+
+fnc main() : i32 {
+    my_fruit : Fruit = Fruit::Apple;
+    if (my_fruit == Fruit::Apple) {
+        print("Apple");
+    } else if (my_fruit == Fruit::Banana) {
+        print("Banana");
+    } else if (my_fruit == Fruit::Orange) {
+        print("Orange");
+    } else {
+        print("Unknown");
+    }
+    ret 0;
+}

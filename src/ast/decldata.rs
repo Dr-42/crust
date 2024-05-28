@@ -178,9 +178,20 @@ impl DeclData {
                     Expr::Iden { val, .. } => val.clone(),
                     _ => panic!("Invalid name for enum declaration"),
                 };
+                let mut vars: Vec<String> = Vec::new();
+                for v in variants {
+                    match *v {
+                        Expr::Iden { val, .. } => {
+                            vars.push(val.clone());
+                        }
+                        _ => {
+                            panic!("Invalid variant in enum declaration");
+                        }
+                    };
+                }
                 self.enum_.push(EnumDeclData {
                     name: nm,
-                    variants: variants.clone(),
+                    variants: vars,
                 });
             }
             Stmt::UnionDecl { name, fields, .. } => {
