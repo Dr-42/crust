@@ -51,13 +51,6 @@ impl GenericType {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum UserDefinedType {
-    Struct,
-    Enum,
-    Union,
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
@@ -68,7 +61,6 @@ pub enum Type {
     UserDefined {
         name: Box<Expr>,
         generic_args: Option<Vec<Box<Type>>>,
-        variant: Option<UserDefinedType>,
     },
     Array {
         base: Box<Type>,

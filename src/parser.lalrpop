@@ -442,11 +442,11 @@ Pointer: Box<Type> = {
 };
 
 FnPtr: Box<Type> = {
-    "fnptr" "<" "(" <args:comma<type>> ")" ":" <ret:type> ">" => box::new(type::fnptr {
+    "fnptr" "<" "(" <args:UntermComma<Type>> ")" ":" <ret:Type> ">" => Box::new(Type::FnPtr {
         args: args,
         ret: ret,
     }),
-    "fnptr" "<" "(" ")" ":" <ret:type> ">" => box::new(type::fnptr {
+    "fnptr" "<" "(" ")" ":" <ret:Type> ">" => Box::new(Type::FnPtr {
         args: Vec::new(),
         ret: ret,
     }),
@@ -466,12 +466,10 @@ UserDefined: Box<Type> = {
     <name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
         name: name,
         generic_args: Some(args),
-        variant: None,
     }),
     <name:Iden> => Box::new(Type::UserDefined {
         name: name,
         generic_args: None,
-        variant: None,
     }),
 };
 
