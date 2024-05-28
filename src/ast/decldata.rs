@@ -42,6 +42,16 @@ pub struct TraitDeclData {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct Checkpoint {
+    var: usize,
+    struct_: usize,
+    function: usize,
+    enum_: usize,
+    union: usize,
+    trait_: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct DeclData {
     pub var: Vec<VarDeclData>,
     pub struct_: Vec<StructDeclData>,
@@ -49,6 +59,7 @@ pub struct DeclData {
     pub enum_: Vec<EnumDeclData>,
     pub union: Vec<UnionDeclData>,
     pub trait_: Vec<TraitDeclData>,
+    pub checkpoints: Vec<Checkpoint>,
 }
 
 impl Default for DeclData {
@@ -66,6 +77,7 @@ impl DeclData {
             enum_: Vec::new(),
             union: Vec::new(),
             trait_: Vec::new(),
+            checkpoints: Vec::new(),
         }
     }
 
@@ -282,6 +294,28 @@ impl DeclData {
                 });
             }
             _ => {}
+        }
+    }
+
+    pub fn check_point(&mut self) {
+        self.checkpoints.push(Checkpoint {
+            var: self.var.len(),
+            struct_: self.struct_.len(),
+            function: self.function.len(),
+            enum_: self.enum_.len(),
+            union: self.union.len(),
+            trait_: self.trait_.len(),
+        });
+    }
+
+    pub fn rollback(&mut self) {
+        if let Some(cp) = self.checkpoints.pop() {
+            self.var.truncate(cp.var);
+            self.struct_.truncate(cp.struct_);
+            self.function.truncate(cp.function);
+            self.enum_.truncate(cp.enum_);
+            self.union.truncate(cp.union);
+            self.trait_.truncate(cp.trait_);
         }
     }
 }
