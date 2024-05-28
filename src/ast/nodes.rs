@@ -104,6 +104,13 @@ pub enum BinaryOp {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct MatchCase {
+    pub pattern: Box<Expr>,
+    pub body: Box<Stmt>,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum AssignOp {
     Assign,
     AddAssign,
@@ -286,6 +293,11 @@ pub enum Stmt {
         name: Box<Expr>,
         for_ty: Box<Type>,
         methods: Vec<Box<Stmt>>,
+        span: Span,
+    },
+    Match {
+        expr: Box<Expr>,
+        cases: Vec<Box<MatchCase>>,
         span: Span,
     },
     Break,

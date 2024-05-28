@@ -8,14 +8,16 @@ enum Fruit {
 
 fnc main() : i32 {
     my_fruit : Fruit = Fruit::Apple;
-    if (my_fruit == Fruit::Apple) {
-        print("Apple");
-    } else if (my_fruit == Fruit::Banana) {
-        print("Banana");
-    } else if (my_fruit == Fruit::Orange) {
-        print("Orange");
-    } else {
-        print("Unknown");
+    match (my_fruit) {
+        case Fruit::Apple => {
+            print("Apple");
+        }
+        case Fruit::Banana => {
+            print("Banana");
+        }
+        case Fruit::Orange => {
+            print("Orange");
+        }
     }
     ret 0;
 }

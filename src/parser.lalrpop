@@ -66,6 +66,7 @@ Stmt: Box<Stmt> = {
     StructMemberAssign,
     ArrayMemberAssign,
     TraitAssign,
+    Match,
 };
 
 TypeAlias: Box<Stmt> = {
@@ -923,6 +924,22 @@ TraitAssign: Box<Stmt> = {
         name: name,
         for_ty: ty,
         methods: methods,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+};
+
+MatchCase: Box<MatchCase> = {
+    <ls:@L> "case" <pat:Expr> "=>" <body:Stmt> <rs:@R> => Box::new(MatchCase {
+        pattern: pat,
+        body: body,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+};
+
+Match: Box<Stmt> = {
+    <ls:@L> "match" "(" <expr:Expr> ")" "{" <cases:(MatchCase)+> "}" <rs:@R> => Box::new(Stmt::Match {
+        expr: expr,
+        cases: cases,
         span: Span::new(ls as u32, rs as u32),
     }),
 };
