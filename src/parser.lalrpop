@@ -4,13 +4,14 @@ use crate::ast::Span;
 
 grammar;
 
+// All the token seperators
 UntermComma<T> : Vec<T> = {
-	<mut v:(<T> ",")*> <e:T> => match e { // (2)
-		e => {
-			v.push(e);
-			v
-		}
-	}
+    <mut v:(<T> ",")*> <e:T> => match e { // (2)
+        e => {
+            v.push(e);
+            v
+        }
+    }
 };
 
 Comma<T>: Vec<T> = {
@@ -24,560 +25,590 @@ Comma<T>: Vec<T> = {
 };
 
 Plud<T>: Vec<T> = {
-	<mut v:(<T> "+")*> <e:T> => { // (2)
-		v.push(e);
-		v
-	}
+    <mut v:(<T> "+")*> <e:T> => { // (2)
+        v.push(e);
+        v
+    }
 };
 
 Semid<T>: Vec<T> = {
-	<mut v:(<T> ";")*> <e:T> => match e { // (2)
-		e => {
-			v.push(e);
-			v
-		}
-	}
+    <mut v:(<T> ";")*> <e:T> => match e { // (2)
+        e => {
+            v.push(e);
+            v
+        }
+    }
 };
 
 
 pub Program: Box<Program> = {
-	(Stmt)+ => Box::new(Program::new(<>)),
+    (Stmt)+ => Box::new(Program::new(<>)),
 };
 
 Stmt: Box<Stmt> = {
-	<t:VarDecl> ";" => t,
-	<t:Expr> ";" => Box::new(Stmt::Expr(t)),
-	TypeAlias,
-	While,
-	Block,
-	For,
-	If,
-	Return,
-	Continue,
-	Break,
-	StructDecl,
-	FunctionDecl,
-	TraitDecl,
-	VarAssign,
-	DerefAssign,
-	StructAssign,
-	StructMemberAssign,
-	ArrayMemberAssign,
-	TraitAssign,
+    <t:VarDecl> ";" => t,
+    <t:Expr> ";" => Box::new(Stmt::Expr(t)),
+    TypeAlias,
+    While,
+    Block,
+    For,
+    If,
+    Return,
+    Continue,
+    Break,
+    StructDecl,
+    FunctionDecl,
+    TraitDecl,
+    VarAssign,
+    DerefAssign,
+    StructAssign,
+    StructMemberAssign,
+    ArrayMemberAssign,
+    TraitAssign,
 };
 
 TypeAlias: Box<Stmt> = {
-	<ls:@L> "type" <t:Type> "is" <name:Iden> ";" <rs:@R> => Box::new(Stmt::TypeAlias {
-		name: name,
-		ty: t,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "type" <t:Type> "is" <name:Iden> ";" <rs:@R> => Box::new(Stmt::TypeAlias {
+        name: name,
+        ty: t,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 Atom: Box<Expr> = {
-	Numeric,
-	Strng,
-	Flt,
-	Chr,
-	Bln,
-	Iden,
-	Index,
-	Call,
-	MemberAccess,
+    Numeric,
+    Strng,
+    Flt,
+    Chr,
+    Bln,
+    Iden,
+    Index,
+    Call,
+    MemberAccess,
 };
 
 Bracketed : Box<Expr> = {
-	"(" <t:Expr> ")" => t,
+    "(" <t:Expr> ")" => t,
 };
 
 Expr: Box<Expr> = {
-	#[precedence(level="0")]
-	Bracketed => <>,
-	Atom => <>,
-	#[precedence(level="1")] #[assoc(side="left")]
-	UnaryOp,
-	#[precedence(level="2")] #[assoc(side="left")]
-	BinaryOp,
-	ArrayLiteral,
+    #[precedence(level="0")]
+    Bracketed => <>,
+    Atom => <>,
+    #[precedence(level="1")] #[assoc(side="left")]
+    UnaryOp,
+    #[precedence(level="2")] #[assoc(side="left")]
+    BinaryOp,
+    ArrayLiteral,
 };
 
 Numeric: Box<Expr> = {
-	<l:@L> <val:r"[0-9]+"> <r:@R> => Box::new(Expr::Numeric {
-		val: FromStr::from_str(val).unwrap(),
-		span: Span::new(l as u32, r as u32),
-	}),
+    <l:@L> <val:r"[0-9]+"> <r:@R> => Box::new(Expr::Numeric {
+        val: FromStr::from_str(val).unwrap(),
+        span: Span::new(l as u32, r as u32),
+    }),
 };
 
 Strng: Box<Expr> = {
-	<l:@L> <val:r#""[^"]*""#> <r:@R> => {
-		let s = val.to_string();
-		let s = s[1..s.len()-1].to_string();
-		Box::new(Expr::Strng {
-			val: s,
-			span: Span::new(l as u32, r as u32),
-		})
-	},
+    <l:@L> <val:r#""[^"]*""#> <r:@R> => {
+        let s = val.to_string();
+        let s = s[1..s.len()-1].to_string();
+        Box::new(Expr::Strng {
+            val: s,
+            span: Span::new(l as u32, r as u32),
+        })
+    },
 };
 
 Flt: Box<Expr> = {
-	<l:@L> <val:r"[0-9]+\.[0-9]+"> <r:@R> => {
-		let val = FromStr::from_str(val).unwrap();
-		Box::new(Expr::Flt {
-			val: val,
-			span: Span::new(l as u32, r as u32),
-		})
-	},
+    <l:@L> <val:r"[0-9]+\.[0-9]+"> <r:@R> => {
+        let val = FromStr::from_str(val).unwrap();
+        Box::new(Expr::Flt {
+            val: val,
+            span: Span::new(l as u32, r as u32),
+        })
+    },
 };
 
 Chr: Box<Expr> = {
-	<l:@L> <val:r"'.'"> <r:@R> => Box::new(Expr::Chr {
-		val: val.chars().nth(1).unwrap(),
-		span: Span::new(l as u32, r as u32),
-	}),
+    <l:@L> <val:r"'.'"> <r:@R> => Box::new(Expr::Chr {
+        val: val.chars().nth(1).unwrap(),
+        span: Span::new(l as u32, r as u32),
+    }),
 };
 
 Bln: Box<Expr> = {
-	"true" => Box::new(Expr::Bln{
-		val: true,
-		span: Span::new(0, 4),
-	}),
-	"false" => Box::new(Expr::Bln{
-		val: false,
-		span: Span::new(0, 5),
-	}),
+    "true" => Box::new(Expr::Bln{
+        val: true,
+        span: Span::new(0, 4),
+    }),
+    "false" => Box::new(Expr::Bln{
+        val: false,
+        span: Span::new(0, 5),
+    }),
 };
 
 Iden: Box<Expr> = {
-	<l:@L> <val:r"[a-zA-Z_][a-zA-Z0-9_]*"> <r:@L> => Box::new(Expr::Iden {
-		val: val.to_string(),
-		span: Span::new(l as u32, r as u32),
-	}),
+    <l:@L> <val:r"[a-zA-Z_][a-zA-Z0-9_]*"> <r:@L> => Box::new(Expr::Iden {
+        val: val.to_string(),
+        span: Span::new(l as u32, r as u32),
+    }),
 };
 
 OpInp: Box<Expr> = {
-	#[precedence(level="0")]
-	Atom => <>,
-	#[precedence(level="1")] #[assoc(side="left")]
-	UnaryOp,
-	#[precedence(level="2")] #[assoc(side="left")]
-	Bracketed,
+    #[precedence(level="0")]
+    Atom => <>,
+    #[precedence(level="1")] #[assoc(side="left")]
+    UnaryOp,
+    #[precedence(level="2")] #[assoc(side="left")]
+    Bracketed,
 };
 
 UnaryOp: Box<Expr> = {
-	#[precedence(level="0")]
-	<l:@L> "--" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Dec,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="1")]
-	<l:@L> "++" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Inc,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="2")]
-	<l:@L> "&" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Ref,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="3")]
-	<l:@L> "*" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Deref,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="4")]
-	<l:@L> "+" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Pos,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="5")]
-	<l:@L> "-" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Neg,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="6")]
-	<l:@L> "!" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::Not,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
-	#[precedence(level="7")]
-	<l:@L> "~" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
-		op: UnaryOp::BitNot,
-		expr: expr,
-		span: Span::new(l as u32, r as u32),
-	}),
+    #[precedence(level="0")]
+    <l:@L> "--" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Dec,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="1")]
+    <l:@L> "++" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Inc,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="2")]
+    <l:@L> "&" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Ref,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="3")]
+    <l:@L> "*" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Deref,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="4")]
+    <l:@L> "+" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Pos,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="5")]
+    <l:@L> "-" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Neg,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="6")]
+    <l:@L> "!" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::Not,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
+    #[precedence(level="7")]
+    <l:@L> "~" <expr:OpInp> <r:@R> => Box::new(Expr::UnaryOp {
+        op: UnaryOp::BitNot,
+        expr: expr,
+        span: Span::new(l as u32, r as u32),
+    }),
 };
 
 BinaryOp: Box<Expr> = {
-	#[precedence(level="0")]
-	<ls:@L> <l:OpInp> "*" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Mul,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="1")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "/" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Div,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="2")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "%" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Mod,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="3")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "+" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Add,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="4")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "-" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Sub,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="5")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "<<" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Shl,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="6")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> ">>" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Shr,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="7")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "<" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Lt,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="8")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "<=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Lte,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="9")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> ">" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Gt,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="10")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> ">=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Gte,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="11")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "==" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Eq,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="12")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "!=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Neq,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="13")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "&" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::BitAnd,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="14")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "^" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::BitXor,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="15")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "|" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::BitOr,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="16")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "&&" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::And,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	#[precedence(level="17")] #[assoc(side="left")]
-	<ls:@L> <l:OpInp> "||" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
-		op: BinaryOp::Or,
-		lhs: l,
-		rhs: r,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    #[precedence(level="0")]
+    <ls:@L> <l:OpInp> "*" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Mul,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="1")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "/" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Div,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="2")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "%" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Mod,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="3")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "+" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Add,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="4")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "-" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Sub,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="5")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "<<" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Shl,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="6")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> ">>" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Shr,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="7")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "<" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Lt,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="8")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "<=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Lte,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="9")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> ">" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Gt,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="10")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> ">=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Gte,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="11")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "==" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Eq,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="12")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "!=" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Neq,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="13")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "&" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::BitAnd,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="14")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "^" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::BitXor,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="15")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "|" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::BitOr,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="16")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "&&" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::And,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    #[precedence(level="17")] #[assoc(side="left")]
+    <ls:@L> <l:OpInp> "||" <r:Expr> <rs:@R> => Box::new(Expr::BinaryOp {
+        op: BinaryOp::Or,
+        lhs: l,
+        rhs: r,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 ArrayLiteral : Box<Expr> = {
-	<ls:@L> "[" <vals:UntermComma<Expr>> "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
-		vals: vals,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "[" "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
-		vals: vec![],
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "[" <vals:UntermComma<Expr>> "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
+        vals: vals,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> "[" "]" <rs:@R> => Box::new(Expr::ArrayLiteral {
+        vals: vec![],
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 Call: Box<Expr> = {
-	<ls:@L> <name:Iden> "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
-		name: name,
-		args: args,
-		generics: None,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> "::<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
-		name: name,
-		args: args,
-		generics: Some(gens),
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <name:Iden> "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
+        name: name,
+        args: args,
+        generics: None,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:Iden> "::<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
+        name: name,
+        args: args,
+        generics: Some(gens),
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 Index: Box<Expr> = {
-	<ls:@L> <name:Iden> <v:("[" <Expr> "]")+> <rs:@R> => Box::new(Expr::Index {
-		name: name,
-		indices: v,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <name:Iden> <v:("[" <Expr> "]")+> <rs:@R> => Box::new(Expr::Index {
+        name: name,
+        indices: v,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 MemAccessOperands: Box<Expr> = {
     #[precedence(level="0")]
-	Numeric,
-	Strng,
-	Flt,
-	Chr,
-	Bln,
-	Iden,
-	Index,
-	Call,
+    Numeric,
+    Strng,
+    Flt,
+    Chr,
+    Bln,
+    Iden,
+    Index,
+    Call,
 };
 
 MemberAccess: Box<Expr> = {
-	<ls:@L> <name:MemAccessOperands> <v:("." <MemAccessOperands>)+> <rs:@R> => {
-		let mut base = name;
-		for m in v {
-			base = Box::new(Expr::MemberAccess {
-				name: base,
-				member: m,
-				span: Span::new(ls as u32, rs as u32),
-			});
-		}
-		base
-	},
+    <ls:@L> <name:MemAccessOperands> <v:("." <MemAccessOperands>)+> <rs:@R> => {
+        let mut base = name;
+        for m in v {
+            base = Box::new(Expr::MemberAccess {
+                name: base,
+                member: m,
+                span: Span::new(ls as u32, rs as u32),
+            });
+        }
+        base
+    },
 };
 
 Type: Box<Type> = {
-	BuilinType => Box::new(Type::Builtin(<>)),
-	Pointer => <>,
-	FnPtr => <>,
-	UserDefined => <>,
-	Array => <>,
+    BuilinType => Box::new(Type::Builtin(<>)),
+    Pointer => <>,
+    FnPtr => <>,
+    UserDefined => <>,
+    Array => <>,
 };
 
 BuilinType: BuiltinType = {
-	"i8" => BuiltinType::I8,
-	"i16" => BuiltinType::I16,
-	"i32" => BuiltinType::I32,
-	"i64" => BuiltinType::I64,
-	"u8" => BuiltinType::U8,
-	"u16" => BuiltinType::U16,
-	"u32" => BuiltinType::U32,
-	"u64" => BuiltinType::U64,
-	"f32" => BuiltinType::F32,
-	"f64" => BuiltinType::F64,
-	"void" => BuiltinType::Void,
-	"chr" => BuiltinType::Chr,
-	"bln" => BuiltinType::Bln,
-	"str" => BuiltinType::Str,
-	"Self" => BuiltinType::Slf,
+    "i8" => BuiltinType::I8,
+    "i16" => BuiltinType::I16,
+    "i32" => BuiltinType::I32,
+    "i64" => BuiltinType::I64,
+    "u8" => BuiltinType::U8,
+    "u16" => BuiltinType::U16,
+    "u32" => BuiltinType::U32,
+    "u64" => BuiltinType::U64,
+    "f32" => BuiltinType::F32,
+    "f64" => BuiltinType::F64,
+    "void" => BuiltinType::Void,
+    "chr" => BuiltinType::Chr,
+    "bln" => BuiltinType::Bln,
+    "str" => BuiltinType::Str,
+    "Self" => BuiltinType::Slf,
 };
 
 Pointer: Box<Type> = {
-	"ptr" <n:"*"+> <t:Type> => {
-		let nr = n.len();
-		let mut base = t;
-		for _ in 0..nr {
-			base = Box::new(Type::Pointer(base));
-		}
-		base
-	}
+    "ptr" <n:"*"+> <t:Type> => {
+        let nr = n.len();
+        let mut base = t;
+        for _ in 0..nr {
+            base = Box::new(Type::Pointer(base));
+        }
+        base
+    }
 };
 
 FnPtr: Box<Type> = {
-	"fnptr" "<" "(" <args:Comma<Type>> ")" ":" <ret:Type> ">" => Box::new(Type::FnPtr {
-		args: args,
-		ret: ret,
-	}),
+    "fnptr" "<" "(" <args:Comma<Type>> ")" ":" <ret:Type> ">" => Box::new(Type::FnPtr {
+        args: args,
+        ret: ret,
+    }),
 };
 
 Array: Box<Type> = {
-	"[" <t:Type> ";" <s:Semid<r"[0-9]+">> "]" => {
-	let len = s.iter().map(|x| FromStr::from_str(x).unwrap()).collect();
-		Box::new(Type::Array {
-			base: t,
-			lens: len,
-		})
-	},
+    "[" <t:Type> ";" <s:Semid<r"[0-9]+">> "]" => {
+    let len = s.iter().map(|x| FromStr::from_str(x).unwrap()).collect();
+        Box::new(Type::Array {
+            base: t,
+            lens: len,
+        })
+    },
 };
 
 UserDefined: Box<Type> = {
-	<name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
-		name: name,
-		generic_args: Some(args),
-		variant: None,
-	}),
-	<name:Iden> => Box::new(Type::UserDefined {
-		name: name,
-		generic_args: None,
-		variant: None,
-	}),
+    <name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
+        name: name,
+        generic_args: Some(args),
+        variant: None,
+    }),
+    <name:Iden> => Box::new(Type::UserDefined {
+        name: name,
+        generic_args: None,
+        variant: None,
+    }),
+};
+
+Qualifiers: QualifierSet = {
+    <q:Qualifier> => {
+        let mut set = QualifierSet { is_static: false, is_const: false };
+        match q {
+            Qualifier::Static => set.is_static = true,
+            Qualifier::Const => set.is_const = true,
+        }
+        set
+    },
+    <q1:Qualifier> <q2:Qualifier> => {
+        let mut set = QualifierSet { is_static: false, is_const: false };
+        match q1 {
+            Qualifier::Static => set.is_static = true,
+            Qualifier::Const => set.is_const = true,
+        }
+        match q2 {
+            Qualifier::Static => set.is_static = true,
+            Qualifier::Const => set.is_const = true,
+        }
+        set
+    },
+};
+
+Qualifier: Qualifier = {
+    "static" => Qualifier::Static,
+    "const" => Qualifier::Const,
 };
 
 VarDecl: Box<Stmt> = {
-	<ls:@L> <name:Iden> ":" <t:Type> "=" <val:Expr> <rs:@R> => Box::new(Stmt::VarDecl {
-		name: name,
-		ty: t,
-		value: Some(val),
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> ":" <t:Type> <rs:@R> => Box::new(Stmt::VarDecl {
-		name: name,
-		ty: t,
-		value: None,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <quals:Qualifiers?> <name:Iden> ":" <t:Type> "=" <val:Expr> <rs:@R> => Box::new(Stmt::VarDecl {
+        name: name,
+	qualifiers: quals,
+        ty: t,
+        value: Some(val),
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals:Qualifiers?> <name:Iden> ":" <t:Type> <rs:@R> => Box::new(Stmt::VarDecl {
+        name: name,
+	qualifiers: quals,
+        ty: t,
+        value: None,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 Block: Box<Stmt> = {
-	"{" <stmts:Stmt*> "}" => Box::new(Stmt::add_block(stmts)),
+    "{" <stmts:Stmt*> "}" => Box::new(Stmt::add_block(stmts)),
 };
 
 While: Box<Stmt> = {
-	<ls:@L> "while" "(" <cond:Expr> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::While {
-		cond: cond,
-		body: body,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "while" "(" <cond:Expr> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::While {
+        cond: cond,
+        body: body,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 For: Box<Stmt> = {
-	<ls:@L> "for" "(" <init:Stmt> <cond:Expr> ";" <step:Stmt> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
-		init: init,
-		cond: cond,
-		step: step,
-		body: body,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "for" "(" <init:Stmt> <cond:Expr> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
-		init: init,
-		cond: cond,
-		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
-			val: 1,
-			span: Span::new(0, 0),
-		}))),
-		body: body,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "for" "(" <init:Stmt> ";" <step:Stmt> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
-		init: init,
-		cond: Box::new(Expr::Bln{
-			val: true,
-			span: Span::new(0, 0),
-		}),
-		step: step,
-		body: body,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "for" "(" <init:Stmt> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
-		init: init,
-		cond: Box::new(Expr::Bln{
-			val: true,
-			span: Span::new(0, 0),
-		}),
-		step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
-			val: 1,
-			span: Span::new(0, 0),
-		}))),
-		body: body,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "for" "(" <init:Stmt> <cond:Expr> ";" <step:Stmt> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
+        init: init,
+        cond: cond,
+        step: step,
+        body: body,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> "for" "(" <init:Stmt> <cond:Expr> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
+        init: init,
+        cond: cond,
+        step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
+            val: 1,
+            span: Span::new(0, 0),
+        }))),
+        body: body,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> "for" "(" <init:Stmt> ";" <step:Stmt> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
+        init: init,
+        cond: Box::new(Expr::Bln{
+            val: true,
+            span: Span::new(0, 0),
+        }),
+        step: step,
+        body: body,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> "for" "(" <init:Stmt> ")" <body:Stmt> <rs:@R> => Box::new(Stmt::For {
+        init: init,
+        cond: Box::new(Expr::Bln{
+            val: true,
+            span: Span::new(0, 0),
+        }),
+        step: Box::new(Stmt::Expr(Box::new(Expr::Numeric{
+            val: 1,
+            span: Span::new(0, 0),
+        }))),
+        body: body,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 ValidIfTail: Box<Stmt> = {
-	Block,
-	<Expr> ";" => Box::new(Stmt::Expr(<>)),
-	Return,
-	Continue,
-	Break,
+    Block,
+    <Expr> ";" => Box::new(Stmt::Expr(<>)),
+    Return,
+    Continue,
+    Break,
 };
 
 If : Box<Stmt> = {
-	<ls:@L> "if" "(" <cond:Expr> ")" <body:ValidIfTail> <rs:@R> => Box::new(Stmt::If {
-		cond: cond,
-		body: body,
-		els: None,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "if" "(" <cond:Expr> ")" <body:ValidIfTail> "else" <else_body:Stmt> <rs:@R> => Box::new(Stmt::If {
-		cond: cond,
-		body: body,
-		els: Some(else_body),
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "if" "(" <cond:Expr> ")" <body:ValidIfTail> <rs:@R> => Box::new(Stmt::If {
+        cond: cond,
+        body: body,
+        els: None,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> "if" "(" <cond:Expr> ")" <body:ValidIfTail> "else" <else_body:Stmt> <rs:@R> => Box::new(Stmt::If {
+        cond: cond,
+        body: body,
+        els: Some(else_body),
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 Return: Box<Stmt> = {
-	"ret" <val:Expr?> ";" => Box::new(Stmt::Return(val)),
+    "ret" <val:Expr?> ";" => Box::new(Stmt::Return(val)),
 };
 
 Continue: Box<Stmt> = {
-	"cont" ";" => Box::new(Stmt::Continue),
+    "cont" ";" => Box::new(Stmt::Continue),
 };
 
 Break: Box<Stmt> = {
-	"brk" ";" => Box::new(Stmt::Break),
+    "brk" ";" => Box::new(Stmt::Break),
 };
 
 GenericType: Box<GenericType> = {
-	<name:Iden> => Box::new(GenericType::new(name, None)),
-	<name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
+    <name:Iden> => Box::new(GenericType::new(name, None)),
+    <name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
 };
 
 GenricDecl: Vec<Box<GenericType>> = {
@@ -585,283 +616,293 @@ GenricDecl: Vec<Box<GenericType>> = {
 };
 
 StructDecl: Box<Stmt> = {
-	<ls:@L> "struct" <name:Iden> "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::StructDecl {
-		name: name,
-		fields: fields,
-		generics: None,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "struct" <name:Iden> "<" <gens:GenricDecl> ">" "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::StructDecl {
-		name: name,
-		fields: fields,
-		generics: Some(gens),
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "struct" <name:Iden> "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::StructDecl {
+        name: name,
+        fields: fields,
+        generics: None,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> "struct" <name:Iden> "<" <gens:GenricDecl> ">" "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::StructDecl {
+        name: name,
+        fields: fields,
+        generics: Some(gens),
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 FunctionDecl: Box<Stmt> = {
-	<ls:@L> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: Some(body),
-		generics: None,
-		isvararg: false,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: Some(body),
-		generics: Some(gens),
-		isvararg: false,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: Some(body),
-		generics: Some(gens),
-		isvararg: true,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: Some(body),
-		generics: None,
-		isvararg: true,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: None,
-		generics: None,
-		isvararg: false,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: None,
-		generics: Some(gens),
-		isvararg: false,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: None,
-		generics: None,
-		isvararg: true,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
-		name: name,
-		args: args,
-		ret: ret,
-		body: None,
-		generics: Some(gens),
-		isvararg: true,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <quals:Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: Some(body),
+        generics: None,
+        isvararg: false,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: Some(body),
+        generics: Some(gens),
+        isvararg: false,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: Some(body),
+        generics: Some(gens),
+        isvararg: true,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: Some(body),
+        generics: None,
+        isvararg: true,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: None,
+        generics: None,
+        isvararg: false,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: None,
+        generics: Some(gens),
+        isvararg: false,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: None,
+        generics: None,
+        isvararg: true,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
+        name: name,
+	qualifiers: quals,
+        args: args,
+        ret: ret,
+        body: None,
+        generics: Some(gens),
+        isvararg: true,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 TraitDecl: Box<Stmt> = {
-	<ls:@L> "trait" <name:Iden> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitDecl {
-		name: name,
-		methods: methods,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "trait" <name:Iden> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitDecl {
+        name: name,
+        methods: methods,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 VarAssign: Box<Stmt> = {
-	<ls:@L> <name:Iden> "=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
-		name: name,
-		value: val,
-		op: AssignOp::Assign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> "+=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
-		name: name,
-		value: val,
-		op: AssignOp::AddAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> "-=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
-		name: name,
-		value: val,
-		op: AssignOp::SubAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> "*=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
-		name: name,
-		value: val,
-		op: AssignOp::MulAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> "/=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
-		name: name,
-		value: val,
-		op: AssignOp::DivAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> "%=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
-		name: name,
-		value: val,
-		op: AssignOp::ModAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <name:Iden> "=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
+        name: name,
+        value: val,
+        op: AssignOp::Assign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:Iden> "+=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
+        name: name,
+        value: val,
+        op: AssignOp::AddAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:Iden> "-=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
+        name: name,
+        value: val,
+        op: AssignOp::SubAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:Iden> "*=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
+        name: name,
+        value: val,
+        op: AssignOp::MulAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:Iden> "/=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
+        name: name,
+        value: val,
+        op: AssignOp::DivAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:Iden> "%=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::VarAssign {
+        name: name,
+        value: val,
+        op: AssignOp::ModAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 DerefAssign: Box<Stmt> = {
-	<ls:@L> <val:UnaryOp> "=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
-		value: val,
-		expr: expr,
-		op: AssignOp::Assign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <val:UnaryOp> "+=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
-		value: val,
-		expr: expr,
-		op: AssignOp::AddAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <val:UnaryOp> "-=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
-		value: val,
-		expr: expr,
-		op: AssignOp::SubAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <val:UnaryOp> "*=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
-		value: val,
-		expr: expr,
-		op: AssignOp::MulAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <val:UnaryOp> "/=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
-		value: val,
-		expr: expr,
-		op: AssignOp::DivAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <val:UnaryOp> "%=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
-		value: val,
-		expr: expr,
-		op: AssignOp::ModAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <val:UnaryOp> "=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
+        value: val,
+        expr: expr,
+        op: AssignOp::Assign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <val:UnaryOp> "+=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
+        value: val,
+        expr: expr,
+        op: AssignOp::AddAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <val:UnaryOp> "-=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
+        value: val,
+        expr: expr,
+        op: AssignOp::SubAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <val:UnaryOp> "*=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
+        value: val,
+        expr: expr,
+        op: AssignOp::MulAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <val:UnaryOp> "/=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
+        value: val,
+        expr: expr,
+        op: AssignOp::DivAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <val:UnaryOp> "%=" <expr:Expr> ";" <rs:@R> => Box::new(Stmt::DerefAssign {
+        value: val,
+        expr: expr,
+        op: AssignOp::ModAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 NameVal: (Box<Expr>, Box<Expr>) = {
-	<name:Iden> "=" <val:Expr> => (name, val),
+    <name:Iden> "=" <val:Expr> => (name, val),
 };
 
 StructAssign: Box<Stmt> = {
-	<ls:@L> <name:Iden> "=" "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
-		name: name,
-		ty: None,
-		fields: fields,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:Iden> ":" <ty:Type> "=" "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
-		name: name,
-		ty: Some(ty),
-		fields: fields,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <name:Iden> "=" "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
+        name: name,
+	qualifiers: None,
+        ty: None,
+        fields: fields,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <quals:Qualifiers?>  <name:Iden> ":" <ty:Type> "=" "{" <fields:Comma<NameVal>> "}" ";" <rs:@R> => Box::new(Stmt::StructAssign {
+        name: name,
+	qualifiers: quals,
+        ty: Some(ty),
+        fields: fields,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 StructMemberAssign: Box<Stmt> = {
-	<ls:@L> <name:MemberAccess> "=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
-		name: name,
-		value: val,
-		op: AssignOp::Assign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:MemberAccess> "+=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
-		name: name,
-		value: val,
-		op: AssignOp::AddAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:MemberAccess> "-=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
-		name: name,
-		value: val,
-		op: AssignOp::SubAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:MemberAccess> "*=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
-		name: name,
-		value: val,
-		op: AssignOp::MulAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:MemberAccess> "/=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
-		name: name,
-		value: val,
-		op: AssignOp::DivAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
-	<ls:@L> <name:MemberAccess> "%=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
-		name: name,
-		value: val,
-		op: AssignOp::ModAssign,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> <name:MemberAccess> "=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
+        name: name,
+        value: val,
+        op: AssignOp::Assign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:MemberAccess> "+=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
+        name: name,
+        value: val,
+        op: AssignOp::AddAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:MemberAccess> "-=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
+        name: name,
+        value: val,
+        op: AssignOp::SubAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:MemberAccess> "*=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
+        name: name,
+        value: val,
+        op: AssignOp::MulAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:MemberAccess> "/=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
+        name: name,
+        value: val,
+        op: AssignOp::DivAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
+    <ls:@L> <name:MemberAccess> "%=" <val:Expr> ";" <rs:@R> => Box::new(Stmt::StructMemberAssign {
+        name: name,
+        value: val,
+        op: AssignOp::ModAssign,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 ArrayMemberAssign: Box<Stmt> = {
-	<l:@L> <name:Index> "=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
-		element: name,
-		value: value,
-		op: AssignOp::Assign,
-		span: Span::new(l as u32, r as u32),
-	}),
-	<l:@L> <name:Index> "+=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
-		element: name,
-		value: value,
-		op: AssignOp::AddAssign,
-		span: Span::new(l as u32, r as u32),
-	}),
-	<l:@L> <name:Index> "-=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
-		element: name,
-		value: value,
-		op: AssignOp::SubAssign,
-		span: Span::new(l as u32, r as u32),
-	}),
-	<l:@L> <name:Index> "*=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
-		element: name,
-		value: value,
-		op: AssignOp::MulAssign,
-		span: Span::new(l as u32, r as u32),
-	}),
-	<l:@L> <name:Index> "/=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
-		element: name,
-		value: value,
-		op: AssignOp::DivAssign,
-		span: Span::new(l as u32, r as u32),
-	}),
-	<l:@L> <name:Index> "%=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
-		element: name,
-		value: value,
-		op: AssignOp::ModAssign,
-		span: Span::new(l as u32, r as u32),
-	}),
+    <l:@L> <name:Index> "=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
+        element: name,
+        value: value,
+        op: AssignOp::Assign,
+        span: Span::new(l as u32, r as u32),
+    }),
+    <l:@L> <name:Index> "+=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
+        element: name,
+        value: value,
+        op: AssignOp::AddAssign,
+        span: Span::new(l as u32, r as u32),
+    }),
+    <l:@L> <name:Index> "-=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
+        element: name,
+        value: value,
+        op: AssignOp::SubAssign,
+        span: Span::new(l as u32, r as u32),
+    }),
+    <l:@L> <name:Index> "*=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
+        element: name,
+        value: value,
+        op: AssignOp::MulAssign,
+        span: Span::new(l as u32, r as u32),
+    }),
+    <l:@L> <name:Index> "/=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
+        element: name,
+        value: value,
+        op: AssignOp::DivAssign,
+        span: Span::new(l as u32, r as u32),
+    }),
+    <l:@L> <name:Index> "%=" <value:Expr> ";" <r:@R> => Box::new(Stmt::ArrayMemberAssign {
+        element: name,
+        value: value,
+        op: AssignOp::ModAssign,
+        span: Span::new(l as u32, r as u32),
+    }),
 };
 
 TraitAssign: Box<Stmt> = {
-	<ls:@L> "impl" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitAssign {
-		name: name,
-		for_ty: ty,
-		methods: methods,
-		span: Span::new(ls as u32, rs as u32),
-	}),
+    <ls:@L> "impl" <name:Iden> "for" <ty:Type> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::TraitAssign {
+        name: name,
+        for_ty: ty,
+        methods: methods,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };

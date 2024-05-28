@@ -1,5 +1,18 @@
 use super::{decldata::DeclData, Span};
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct QualifierSet {
+    pub is_static: bool,
+    pub is_const: bool,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Qualifier {
+    Static,
+    Const,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Comment {
     SingleLine(String),
     MultiLine(String),
@@ -200,6 +213,7 @@ pub enum Stmt {
     },
     VarDecl {
         name: Box<Expr>,
+        qualifiers: Option<QualifierSet>,
         ty: Box<Type>,
         value: Option<Box<Expr>>,
         span: Span,
@@ -232,6 +246,7 @@ pub enum Stmt {
     },
     FunctionDecl {
         name: Box<Expr>,
+        qualifiers: Option<QualifierSet>,
         args: Vec<Box<Stmt>>,
         ret: Box<Type>,
         body: Option<Box<Stmt>>,
@@ -253,6 +268,7 @@ pub enum Stmt {
     },
     StructAssign {
         name: Box<Expr>,
+        qualifiers: Option<QualifierSet>,
         ty: Option<Box<Type>>,
         fields: Vec<(Box<Expr>, Box<Expr>)>,
         span: Span,

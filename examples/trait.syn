@@ -1,7 +1,7 @@
 fnc print(a : str, ...) : void;
 
 trait Add {
-	fnc sum(a : Self, b : Self) : Self;
+	fnc sum(const a : Self, const b : Self) : Self;
 }
 
 struct Point {
@@ -10,7 +10,7 @@ struct Point {
 }
 
 impl Add for Point {
-	fnc sum(a: Self, b: Self) : Self {
+	fnc sum(const a: Self, const b: Self) : Self {
 		return : Self = {
 			x = a.x + b.x,
 			y = a.y + b.y,
@@ -21,12 +21,12 @@ impl Add for Point {
 }
 
 fnc main() : i32 {
-	pta : Point = {
+	const pta : Point = {
 		x = 20,
 		y = 40,
 	};
 
-	ptb : Point = {
+	const ptb : Point = {
 		x = 50,
 		y = 60,
 	};
