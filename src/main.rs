@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     eprintln!("Error parsing file: {:?}", path);
                     let diag = Diagnostic::error()
                         .with_message(e.message)
-                        .with_labels(vec![Label::primary(file_id, e.span).with_message("Error")]);
+                        .with_labels(vec![Label::primary(file_id, e.span).with_message("here")]);
 
                     let writer = StandardStream::stderr(ColorChoice::Always);
                     let config = codespan_reporting::term::Config::default();

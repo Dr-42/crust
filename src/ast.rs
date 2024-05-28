@@ -50,21 +50,24 @@ pub fn parse(text: &str) -> Result<Box<nodes::Program>, MyparseError> {
     match res {
         Ok(program) => Ok(program),
         Err(e) => {
-            let (span, token) = match e {
-                lalrpop_util::ParseError::InvalidToken { location } => {
-                    (Span::new(location as u32, location as u32 + 1), None)
-                }
-                lalrpop_util::ParseError::UnrecognizedToken { token, .. } => (
-                    Span::new(token.0 as u32, token.2 as u32),
-                    Some(token.1.to_string()),
-                ),
-                _ => (Span::new(0, 0), None),
+            let error = match e {
+                lalrpop_util::ParseError::InvalidToken { location } => MyparseError {
+                    span: Span::new(location as u32, location as u32),
+                    token: None,
+                    message: "Invalid token".to_string(),
+                },
+                lalrpop_util::ParseError::UnrecognizedToken { token, .. } => MyparseError {
+                    span: Span::new(token.0 as u32, token.2 as u32),
+                    token: Some(token.1.to_string()),
+                    message: "Unrecognized token".to_string(),
+                },
+                _ => MyparseError {
+                    span: Span::new(0, 0),
+                    token: None,
+                    message: "Unknown error".to_string(),
+                },
             };
-            Err(MyparseError {
-                span,
-                token,
-                message: "Parse error".to_string(),
-            })
+            Err(error)
         }
     }
 }
