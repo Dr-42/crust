@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use ast::{decldata::DeclData, tych::TychContext};
+use ast::tych::TychContext;
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,

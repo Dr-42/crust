@@ -32,6 +32,7 @@ pub struct EnumDeclData {
 pub struct UnionDeclData {
     pub name: String,
     pub fields: Vec<VarDeclData>,
+    pub generics: Option<Vec<GenericType>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -212,24 +213,48 @@ impl DeclData {
                     variants: vars,
                 });
             }
-            Stmt::UnionDecl { name, fields, .. } => {
+            Stmt::UnionDecl {
+                name,
+                fields,
+                generics,
+                ..
+            } => {
                 let nm = match *name {
                     Expr::Iden { val, .. } => val.clone(),
-                    _ => panic!("Invalid name for union declaration"),
+                    _ => panic!("Invalid name for struct declaration"),
                 };
                 let mut flds = Vec::new();
                 for fld in fields.iter() {
-                    let nm1 = fld.0.clone();
-                    let ty = Box::new(fld.1.clone());
-                    let nm = match *nm1 {
-                        Expr::Iden { val, .. } => val.clone(),
-                        _ => panic!("Invalid name for union field"),
+                    match *fld.clone() {
+                        Stmt::VarDecl { name, ty, .. } => {
+                            let nm = match *name {
+                                Expr::Iden { val, .. } => val.clone(),
+                                _ => panic!("Invalid name for struct field"),
+                            };
+                            flds.push(VarDeclData {
+                                name: nm,
+                                ty: ty.clone(),
+                            });
+                        }
+                        _ => {
+                            panic!("Invalid field in struct declaration");
+                        }
                     };
-                    flds.push(VarDeclData { name: nm, ty });
                 }
+                let generics = match generics {
+                    Some(ref g) => {
+                        let mut res = Vec::new();
+                        for gen in g.iter() {
+                            res.push(*gen.clone());
+                        }
+                        Some(res)
+                    }
+                    None => None,
+                };
                 self.union.push(UnionDeclData {
                     name: nm,
                     fields: flds,
+                    generics,
                 });
             }
             Stmt::TraitDecl { name, methods, .. } => {

@@ -248,7 +248,8 @@ pub enum Stmt {
     },
     UnionDecl {
         name: Box<Expr>,
-        fields: Vec<(Box<Expr>, Type)>,
+        fields: Vec<Box<Stmt>>,
+        generics: Option<Vec<Box<GenericType>>>,
         span: Span,
     },
     FunctionDecl {
@@ -303,8 +304,8 @@ pub enum Stmt {
         cases: Vec<Box<MatchCase>>,
         span: Span,
     },
-    Break,
-    Continue,
+    Break(Span),
+    Continue(Span),
 }
 
 impl Stmt {

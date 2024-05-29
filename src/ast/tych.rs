@@ -19,6 +19,7 @@ pub struct TychContext {
     decl_data: DeclData,
     file_id: usize,
     current_fn_return_type: Option<Type>,
+    in_loop: bool,
 }
 
 impl TychContext {
@@ -27,6 +28,7 @@ impl TychContext {
             decl_data: DeclData::new(),
             file_id,
             current_fn_return_type: None,
+            in_loop: false,
         }
     }
 
@@ -87,7 +89,9 @@ impl TychContext {
                         self.create_error("Expected boolean expression in while statement", span)
                     );
                 }
+                self.in_loop = true;
                 self.tych_stmt(*body)?;
+                self.in_loop = false;
             }
             Stmt::For {
                 init,
@@ -96,6 +100,7 @@ impl TychContext {
                 body,
                 span,
             } => {
+                self.decl_data.push_scope();
                 self.tych_stmt(*init)?;
                 let cond_type = self.tych_expr(*cond)?;
                 if cond_type != Type::Builtin(BuiltinType::Bln) {
@@ -104,19 +109,23 @@ impl TychContext {
                     );
                 }
                 self.tych_stmt(*step)?;
+                self.in_loop = true;
                 self.tych_stmt(*body)?;
+                self.in_loop = false;
+                self.decl_data.pop_scope();
             }
             Stmt::Return { expr, span } => {
                 if self.current_fn_return_type.is_none() {
                     return Err(self.create_error("Return statement outside of function", span));
                 }
                 if let Some(ret_ty) = expr {
-                    let expr_ty = self.tych_expr(ret_ty)?;
-                    if self.current_fn_return_type.unwrap() != expr_ty {
+                    let expr_ty = self.tych_expr(*ret_ty)?;
+                    if self.current_fn_return_type.clone().unwrap() != expr_ty {
                         return Err(self.create_error("Return type mismatch", span));
                     }
                 }
-                if self.current_fn_return_type.unwrap() != Type::Builtin(BuiltinType::Void) {
+                if self.current_fn_return_type.clone().unwrap() != Type::Builtin(BuiltinType::Void)
+                {
                     return Err(self.create_error(
                         "Returning nothing from a function with declared type",
                         span,
@@ -137,25 +146,109 @@ impl TychContext {
                 ty,
                 value,
                 span,
-            } => todo!(),
+            } => match *name {
+                Expr::Iden { val, span } => {
+                    let var_name = val;
+                    if let Some(value) = value {
+                        let value_ty = self.tych_expr(*value)?;
+                        if *ty != value_ty {
+                            return Err(
+                                self.create_error("Type mismatch in variable assignment", span)
+                            );
+                        }
+                    }
+                }
+                _ => return Err(self.create_error("Expected identifier", span)),
+            },
             Stmt::StructDecl {
                 name,
                 fields,
                 generics,
                 span,
-            } => todo!(),
-            Stmt::ImplDecl { ty, methods, span } => todo!(),
+            } => match *name {
+                Expr::Iden { val, span } => {
+                    let struct_name = val;
+                    for field in fields {
+                        self.tych_stmt(*field)?;
+                    }
+                }
+                _ => return Err(self.create_error("Expected identifier", span)),
+            },
+            Stmt::ImplDecl { ty, methods, span } => {
+                let struct_data = self.decl_data.struct_.clone();
+                let ty_name = match ty {
+                    Type::UserDefined { name, .. } => match *name {
+                        Expr::Iden { val, span } => val,
+                        _ => {
+                            return Err(self.create_error("Expected identifier", span));
+                        }
+                    },
+                    _ => {
+                        return Err(
+                            self.create_error("Expected user defined type to impl methods", span)
+                        )
+                    }
+                };
+                if struct_data.iter().any(|s| s.name == ty_name) {
+                    return Err(self.create_error("Type not found for declaring impl", span));
+                }
+                for method in methods {
+                    self.tych_stmt(*method)?;
+                }
+            }
             Stmt::TraitDecl {
                 name,
                 methods,
                 span,
-            } => todo!(),
+            } => {
+                let trait_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => return Err(self.create_error("Expected identifier for trait name", span)),
+                };
+                for method in methods {
+                    self.tych_stmt(*method)?;
+                }
+            }
             Stmt::EnumDecl {
                 name,
                 variants,
                 span,
-            } => todo!(),
-            Stmt::UnionDecl { name, fields, span } => todo!(),
+            } => {
+                let enum_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(self.create_error("Expected identifier for an enum name", span))
+                    }
+                };
+                for variant in variants {
+                    match *variant {
+                        Expr::Iden { val, span } => {
+                            let variant_name = val;
+                        }
+                        _ => {
+                            return Err(
+                                self.create_error("Expected identifier in enum variants", span)
+                            )
+                        }
+                    }
+                }
+            }
+            Stmt::UnionDecl {
+                name,
+                fields,
+                generics,
+                span,
+            } => {
+                let union_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(self.create_error("Expected identifier for a union name", span))
+                    }
+                };
+                for field in fields {
+                    self.tych_stmt(*field)?;
+                }
+            }
             Stmt::FunctionDecl {
                 name,
                 qualifiers,
@@ -165,26 +258,67 @@ impl TychContext {
                 generics,
                 isvararg,
                 span,
-            } => todo!(),
+            } => {
+                let fn_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(self.create_error("Expected identifier for function name", span))
+                    }
+                };
+                self.current_fn_return_type = Some(*ret);
+                for arg in args {
+                    self.tych_stmt(*arg)?;
+                }
+                if let Some(body) = body {
+                    self.tych_stmt(*body)?;
+                }
+            }
             Stmt::VarAssign {
                 name,
                 value,
                 op,
                 span,
-            } => todo!(),
+            } => {
+                let var_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(
+                            self.create_error("Expected identifier for variable assignment", span)
+                        )
+                    }
+                };
+                let var_data = self.decl_data.var.iter().find(|v| v.name == var_name);
+                if let Some(var_data) = var_data {
+                    let var_ty = *var_data.ty.clone();
+                    let value_ty = self.tych_expr(*value)?;
+                    if var_ty != value_ty {
+                        return Err(self.create_error("Type mismatch in variable assignment", span));
+                    }
+                } else {
+                    return Err(self.create_error("Variable not found", span));
+                }
+            }
             Stmt::DerefAssign {
                 value,
                 expr,
                 op,
                 span,
-            } => todo!(),
+            } => {
+                let value_ty = self.tych_expr(*value)?;
+                let expr_ty = self.tych_expr(*expr)?;
+                if value_ty != Type::Pointer(Box::new(expr_ty)) {
+                    return Err(self.create_error("Type mismatch in dereference assignment", span));
+                }
+            }
             Stmt::StructAssign {
                 name,
                 qualifiers,
                 ty,
                 fields,
                 span,
-            } => todo!(),
+            } => {
+                todo!()
+            }
             Stmt::StructMemberAssign {
                 name,
                 value,
@@ -204,13 +338,52 @@ impl TychContext {
                 span,
             } => todo!(),
             Stmt::Match { expr, cases, span } => todo!(),
-            Stmt::Break => todo!(),
-            Stmt::Continue => todo!(),
+            Stmt::Break(span) => {
+                if !self.in_loop {
+                    return Err(self.create_error("Break statement outside of loop", span));
+                }
+            }
+            Stmt::Continue(span) => {
+                if !self.in_loop {
+                    return Err(self.create_error("Continue statement outside of loop", span));
+                }
+            }
         };
         Ok(())
     }
 
-    pub fn tych_expr(&mut self, expr: Expr) -> Result<Type, Diagnostic> {
-        todo!()
+    pub fn tych_expr(&mut self, expr: Expr) -> Result<Type, Diagnostic<usize>> {
+        match expr {
+            Expr::Numeric { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::Strng { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::Flt { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::Chr { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::Bln { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::Iden { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::UnaryOp { op, expr, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::BinaryOp { lhs, op, rhs, span } => {
+                Err(self.create_error("Not yet handled", span))
+            }
+            Expr::Call {
+                name,
+                args,
+                generics,
+                span,
+            } => Err(self.create_error("Not yet handled", span)),
+            Expr::Index {
+                name,
+                indices,
+                span,
+            } => Err(self.create_error("Not yet handled", span)),
+            Expr::MemberAccess { name, member, span } => {
+                Err(self.create_error("Not yet handled", span))
+            }
+            Expr::ArrayLiteral { vals, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::EnumLiteral {
+                name,
+                variant,
+                span,
+            } => Err(self.create_error("Not yet handled", span)),
+        }
     }
 }
