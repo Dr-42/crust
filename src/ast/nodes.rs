@@ -210,7 +210,10 @@ pub enum Stmt {
         body: Box<Stmt>,
         span: Span,
     },
-    Return(Option<Box<Expr>>),
+    Return {
+        expr: Option<Box<Expr>>,
+        span: Span,
+    },
     Block {
         stmts: Vec<Box<Stmt>>,
         decl_data: DeclData,

@@ -42,6 +42,12 @@ pub struct TraitDeclData {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct TypeAliasData {
+    pub name: String,
+    pub ty: Box<Type>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct Checkpoint {
     var: usize,
     struct_: usize,
@@ -293,11 +299,22 @@ impl DeclData {
                     generics: None,
                 });
             }
+            Stmt::TypeAlias { name, ty, .. } => {
+                let nm = match *name {
+                    Expr::Iden { val, .. } => val.clone(),
+                    _ => panic!("Invalid name for type alias"),
+                };
+                self.var.push(VarDeclData {
+                    name: nm,
+                    ty: ty.clone(),
+                });
+            }
+
             _ => {}
         }
     }
 
-    pub fn check_point(&mut self) {
+    pub fn push_scope(&mut self) {
         self.checkpoints.push(Checkpoint {
             var: self.var.len(),
             struct_: self.struct_.len(),
@@ -308,7 +325,7 @@ impl DeclData {
         });
     }
 
-    pub fn rollback(&mut self) {
+    pub fn pop_scope(&mut self) {
         if let Some(cp) = self.checkpoints.pop() {
             self.var.truncate(cp.var);
             self.struct_.truncate(cp.struct_);

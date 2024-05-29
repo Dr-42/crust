@@ -2,6 +2,7 @@ use crate::parser;
 
 pub mod decldata;
 pub mod nodes;
+pub mod tych;
 
 pub type Span = codespan::Span;
 
