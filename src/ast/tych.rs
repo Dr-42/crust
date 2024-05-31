@@ -10,7 +10,7 @@ use codespan_reporting::{
 };
 
 use super::{
-    decldata::DeclData,
+    decldata::{DeclData, StructDeclData},
     nodes::{BuiltinType, Expr, Program, Stmt, Type},
     Span,
 };
@@ -20,6 +20,7 @@ pub struct TychContext {
     file_id: usize,
     current_fn_return_type: Option<Type>,
     in_loop: bool,
+    impl_type: Option<StructDeclData>,
 }
 
 impl TychContext {
@@ -29,6 +30,7 @@ impl TychContext {
             file_id,
             current_fn_return_type: None,
             in_loop: false,
+            impl_type: None,
         }
     }
 
@@ -190,7 +192,9 @@ impl TychContext {
                         )
                     }
                 };
-                if struct_data.iter().any(|s| s.name == ty_name) {
+                if let Some(struct_type) = struct_data.iter().find(|s| s.name == ty_name) {
+                    self.impl_type = Some(struct_type.clone());
+                } else {
                     return Err(self.create_error("Type not found for declaring impl", span));
                 }
                 for method in methods {
@@ -318,19 +322,44 @@ impl TychContext {
                 fields,
                 span,
             } => {
-                let struct_name = match *name {
-                    Expr::Iden { val, span } => val,
-                    _ => {
-                        return Err(
-                            self.create_error("Expected identifier for struct assignment", span)
-                        )
+                let struct_data = if let Some(ty) = ty {
+                    match *ty {
+                        Type::UserDefined { name, .. } => match *name {
+                            Expr::Iden { val, span } => {
+                                self.decl_data.struct_.iter().find(|s| s.name == val)
+                            }
+                            _ => {
+                                return Err(self.create_error(
+                                    "Expected identifier for struct assignment",
+                                    span,
+                                ));
+                            }
+                        },
+                        Type::Builtin(BuiltinType::Slf) => {
+                            if let Some(struct_data) = self.impl_type.as_ref() {
+                                Some(struct_data)
+                            } else {
+                                return Err(self.create_error("No struct type found", span));
+                            }
+                        }
+                        _ => {
+                            return Err(self.create_error(
+                                "Expected user defined type for struct assignment",
+                                span,
+                            ));
+                        }
+                    }
+                } else {
+                    match *name {
+                        Expr::Iden { val, span } => {
+                            self.decl_data.struct_.iter().find(|s| s.name == val)
+                        }
+                        _ => {
+                            return Err(self
+                                .create_error("Expected identifier for struct assignment", span));
+                        }
                     }
                 };
-                let struct_data = self
-                    .decl_data
-                    .struct_
-                    .iter()
-                    .find(|s| s.name == struct_name);
                 if let Some(struct_data) = struct_data {
                     for field in fields {
                         let field_name = *field.0;
@@ -515,6 +544,31 @@ impl TychContext {
                 };
                 let trait_data = self.decl_data.trait_.iter().find(|t| t.name == trait_name);
                 if let Some(trait_data) = trait_data {
+                    match *for_ty {
+                        Type::UserDefined { name, .. } => match *name {
+                            Expr::Iden { val, span } => {
+                                let struct_name = val;
+                                let struct_data = self
+                                    .decl_data
+                                    .struct_
+                                    .iter()
+                                    .find(|s| s.name == struct_name);
+                                if let Some(struct_data) = struct_data {
+                                    self.impl_type = Some(struct_data.clone());
+                                } else {
+                                    return Err(self.create_error("Struct not found", span));
+                                }
+                            }
+                            _ => {
+                                return Err(
+                                    self.create_error("Expected identifier for struct", span)
+                                )
+                            }
+                        },
+                        _ => {
+                            return Err(self.create_error("Expected user defined type", span));
+                        }
+                    }
                     for method in methods {
                         self.tych_stmt(*method)?;
                     }
