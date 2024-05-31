@@ -10,7 +10,7 @@ use codespan_reporting::{
 };
 
 use super::{
-    decldata::{DeclData, StructDeclData, VarDeclData},
+    decldata::{DeclData, FunctionDeclData, StructDeclData, VarDeclData},
     nodes::{BinaryOp, BuiltinType, Expr, Program, Stmt, Type},
     Span,
 };
@@ -19,7 +19,6 @@ pub struct TychContext {
     decl_data: DeclData,
     file_id: usize,
     current_fn_return_type: Option<Type>,
-    current_fn_args: Vec<VarDeclData>,
     in_loop: bool,
     impl_type: Option<StructDeclData>,
 }
@@ -30,7 +29,6 @@ impl TychContext {
             decl_data: DeclData::new(),
             file_id,
             current_fn_return_type: None,
-            current_fn_args: vec![],
             in_loop: false,
             impl_type: None,
         }
@@ -274,9 +272,10 @@ impl TychContext {
                     }
                 };
                 self.current_fn_return_type = Some(*ret);
+                self.decl_data.push_scope();
                 for arg in args {
                     self.tych_stmt(*arg.clone())?;
-                    match *arg {
+                    match *arg.clone() {
                         Stmt::VarDecl {
                             name,
                             qualifiers,
@@ -294,10 +293,7 @@ impl TychContext {
                                 }
                             };
                             let var_ty = *ty;
-                            self.current_fn_args.push(VarDeclData {
-                                name: var_name,
-                                ty: Box::new(var_ty),
-                            });
+                            self.decl_data.add(&arg.clone())
                         }
                         _ => {
                             return Err(self.create_error(
@@ -310,8 +306,8 @@ impl TychContext {
                 if let Some(body) = body {
                     self.tych_stmt(*body)?;
                 }
+                self.decl_data.pop_scope();
                 self.current_fn_return_type = None;
-                self.current_fn_args = vec![];
             }
             Stmt::VarAssign {
                 name,
@@ -652,17 +648,15 @@ impl TychContext {
                 let var_data = self.decl_data.var.iter().find(|v| v.name == val);
                 if let Some(var_data) = var_data {
                     Ok(var_data.ty.as_ref().clone())
+                } else if let Some(fn_data) = self.decl_data.function.iter().find(|f| f.name == val)
+                {
+                    let fn_args = fn_data.args.clone().iter().map(|a| a.ty.clone()).collect();
+                    Ok(Type::FnPtr {
+                        args: fn_args,
+                        ret: Box::new(*fn_data.ret.clone()),
+                    })
                 } else {
-                    let fn_arg = self
-                        .current_fn_args
-                        .iter()
-                        .find(|a| a.name == val)
-                        .map(|a| a.ty.clone());
-                    if let Some(fn_arg) = fn_arg {
-                        Ok(*fn_arg)
-                    } else {
-                        Err(self.create_error("Variable not found", span))
-                    }
+                    Err(self.create_error("Variable not found", span))
                 }
             }
             Expr::UnaryOp { op, expr, span } => Err(self.create_error("Not yet handled", span)),
@@ -683,8 +677,7 @@ impl TychContext {
                         return Err(self.create_error("Expected identifier for function call", span))
                     }
                 };
-                let fn_data = self.decl_data.function.iter().find(|f| f.name == fn_name);
-                if let Some(fn_data) = fn_data {
+                if let Some(fn_data) = self.decl_data.function.iter().find(|f| f.name == fn_name) {
                     let mut arg_types = vec![];
                     for arg in args {
                         let arg_ty = self.tych_expr(*arg)?;
@@ -706,6 +699,35 @@ impl TychContext {
                         }
                     }
                     Ok(fn_data.ret.as_ref().clone())
+                } else if let Some(fn_ptr_data) = self
+                    .decl_data
+                    .var
+                    .iter()
+                    .find(|v| matches!(*v.ty, Type::FnPtr { .. }))
+                {
+                    let fn_ptr_ty = *fn_ptr_data.ty.clone();
+                    match fn_ptr_ty {
+                        Type::FnPtr {
+                            args: ptr_args,
+                            ret,
+                        } => {
+                            let mut arg_types = vec![];
+                            for arg in args.clone() {
+                                let arg_ty = self.tych_expr(*arg)?;
+                                arg_types.push(arg_ty);
+                            }
+                            if args.len() != arg_types.len() {
+                                return Err(self.create_error("Argument count mismatch", span));
+                            }
+                            for (arg_ty, fn_arg_ty) in arg_types.iter().zip(ptr_args.iter()) {
+                                if *arg_ty != **fn_arg_ty {
+                                    return Err(self.create_error("Argument type mismatch", span));
+                                }
+                            }
+                            Ok(*ret)
+                        }
+                        _ => Err(self.create_error("Expected function pointer", span)),
+                    }
                 } else {
                     Err(self.create_error("Function not found", span))
                 }
