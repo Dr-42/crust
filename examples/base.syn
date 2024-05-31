@@ -1,5 +1,5 @@
 fnc main() : i32 {
-	// The main file
+	a : i32 = 5;
 	if ((a % 2) == 0) {
 		ret 0;
 	}

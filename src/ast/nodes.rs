@@ -50,7 +50,7 @@ impl GenericType {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Type {
     Builtin(BuiltinType),
     Pointer(Box<Type>),
@@ -66,6 +66,56 @@ pub enum Type {
         base: Box<Type>,
         lens: Vec<usize>,
     },
+}
+
+impl PartialEq for Type {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Builtin(l0), Self::Builtin(r0)) => l0 == r0,
+            (Self::Pointer(l0), Self::Pointer(r0)) => l0 == r0,
+            (
+                Self::FnPtr {
+                    args: l_args,
+                    ret: l_ret,
+                },
+                Self::FnPtr {
+                    args: r_args,
+                    ret: r_ret,
+                },
+            ) => l_args == r_args && l_ret == r_ret,
+            (
+                Self::UserDefined {
+                    name: l_name,
+                    generic_args: l_generic_args,
+                },
+                Self::UserDefined {
+                    name: r_name,
+                    generic_args: r_generic_args,
+                },
+            ) => {
+                let l_name_val = match l_name.as_ref() {
+                    Expr::Iden { val, .. } => val,
+                    _ => unreachable!(),
+                };
+                let r_name_val = match r_name.as_ref() {
+                    Expr::Iden { val, .. } => val,
+                    _ => unreachable!(),
+                };
+                l_name_val == r_name_val && l_generic_args == r_generic_args
+            }
+            (
+                Self::Array {
+                    base: l_base,
+                    lens: l_lens,
+                },
+                Self::Array {
+                    base: r_base,
+                    lens: r_lens,
+                },
+            ) => l_base == r_base && l_lens == r_lens,
+            _ => false,
+        }
+    }
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -94,7 +144,6 @@ pub enum BinaryOp {
     Gt,
     Gte,
     Eq,
-    Clone,
     Neq,
     BitAnd,
     BitXor,

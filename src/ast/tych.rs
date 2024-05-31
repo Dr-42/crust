@@ -10,8 +10,8 @@ use codespan_reporting::{
 };
 
 use super::{
-    decldata::{DeclData, StructDeclData},
-    nodes::{BuiltinType, Expr, Program, Stmt, Type},
+    decldata::{DeclData, StructDeclData, VarDeclData},
+    nodes::{BinaryOp, BuiltinType, Expr, Program, Stmt, Type},
     Span,
 };
 
@@ -19,6 +19,7 @@ pub struct TychContext {
     decl_data: DeclData,
     file_id: usize,
     current_fn_return_type: Option<Type>,
+    current_fn_args: Vec<VarDeclData>,
     in_loop: bool,
     impl_type: Option<StructDeclData>,
 }
@@ -29,6 +30,7 @@ impl TychContext {
             decl_data: DeclData::new(),
             file_id,
             current_fn_return_type: None,
+            current_fn_args: vec![],
             in_loop: false,
             impl_type: None,
         }
@@ -125,8 +127,8 @@ impl TychContext {
                     if self.current_fn_return_type.clone().unwrap() != expr_ty {
                         return Err(self.create_error("Return type mismatch", span));
                     }
-                }
-                if self.current_fn_return_type.clone().unwrap() != Type::Builtin(BuiltinType::Void)
+                } else if self.current_fn_return_type.clone().unwrap()
+                    != Type::Builtin(BuiltinType::Void)
                 {
                     return Err(self.create_error(
                         "Returning nothing from a function with declared type",
@@ -155,6 +157,7 @@ impl TychContext {
                     if let Some(value) = value {
                         let value_ty = self.tych_expr(*value)?;
                         if *ty != value_ty {
+                            eprintln!("---\n{:?}\n {:?}\n---\n", ty, value_ty);
                             return Err(
                                 self.create_error("Type mismatch in variable assignment", span)
                             );
@@ -272,11 +275,43 @@ impl TychContext {
                 };
                 self.current_fn_return_type = Some(*ret);
                 for arg in args {
-                    self.tych_stmt(*arg)?;
+                    self.tych_stmt(*arg.clone())?;
+                    match *arg {
+                        Stmt::VarDecl {
+                            name,
+                            qualifiers,
+                            ty,
+                            value,
+                            span,
+                        } => {
+                            let var_name = match *name {
+                                Expr::Iden { val, span } => val,
+                                _ => {
+                                    return Err(self.create_error(
+                                        "Expected identifier for function arguments",
+                                        span,
+                                    ))
+                                }
+                            };
+                            let var_ty = *ty;
+                            self.current_fn_args.push(VarDeclData {
+                                name: var_name,
+                                ty: Box::new(var_ty),
+                            });
+                        }
+                        _ => {
+                            return Err(self.create_error(
+                                "Expected variable declaration for function arguments",
+                                span,
+                            ))
+                        }
+                    }
                 }
                 if let Some(body) = body {
                     self.tych_stmt(*body)?;
                 }
+                self.current_fn_return_type = None;
+                self.current_fn_args = vec![];
             }
             Stmt::VarAssign {
                 name,
@@ -527,7 +562,9 @@ impl TychContext {
                 value,
                 op,
                 span,
-            } => todo!(),
+            } => {
+                return Err(self.create_error("Not yet handled", span));
+            }
             Stmt::TraitAssign {
                 name,
                 for_ty,
@@ -596,22 +633,73 @@ impl TychContext {
 
     pub fn tych_expr(&self, expr: Expr) -> Result<Type, Diagnostic<usize>> {
         match expr {
-            Expr::Numeric { val, span } => Err(self.create_error("Not yet handled", span)),
-            Expr::Strng { val, span } => Err(self.create_error("Not yet handled", span)),
-            Expr::Flt { val, span } => Err(self.create_error("Not yet handled", span)),
-            Expr::Chr { val, span } => Err(self.create_error("Not yet handled", span)),
-            Expr::Bln { val, span } => Err(self.create_error("Not yet handled", span)),
-            Expr::Iden { val, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::Numeric { val, span } => Ok(Type::Builtin(BuiltinType::I32)),
+            Expr::Strng { val, span } => Ok(Type::Builtin(BuiltinType::Str)),
+            Expr::Flt { val, span } => Ok(Type::Builtin(BuiltinType::F32)),
+            Expr::Chr { val, span } => Ok(Type::Builtin(BuiltinType::Chr)),
+            Expr::Bln { val, span } => Ok(Type::Builtin(BuiltinType::Bln)),
+            Expr::Iden { val, span } => {
+                let var_data = self.decl_data.var.iter().find(|v| v.name == val);
+                if let Some(var_data) = var_data {
+                    Ok(var_data.ty.as_ref().clone())
+                } else {
+                    let fn_arg = self
+                        .current_fn_args
+                        .iter()
+                        .find(|a| a.name == val)
+                        .map(|a| a.ty.clone());
+                    if let Some(fn_arg) = fn_arg {
+                        Ok(*fn_arg)
+                    } else {
+                        Err(self.create_error("Variable not found", span))
+                    }
+                }
+            }
             Expr::UnaryOp { op, expr, span } => Err(self.create_error("Not yet handled", span)),
             Expr::BinaryOp { lhs, op, rhs, span } => {
-                Err(self.create_error("Not yet handled", span))
+                let lhs_ty = self.tych_expr(*lhs)?;
+                let rhs_ty = self.tych_expr(*rhs)?;
+                self.check_compatible_type(lhs_ty, rhs_ty, op, span)
             }
             Expr::Call {
                 name,
                 args,
                 generics,
                 span,
-            } => Err(self.create_error("Not yet handled", span)),
+            } => {
+                let fn_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(self.create_error("Expected identifier for function call", span))
+                    }
+                };
+                let fn_data = self.decl_data.function.iter().find(|f| f.name == fn_name);
+                if let Some(fn_data) = fn_data {
+                    let mut arg_types = vec![];
+                    for arg in args {
+                        let arg_ty = self.tych_expr(*arg)?;
+                        arg_types.push(arg_ty);
+                    }
+                    if fn_data.variadic {
+                        if fn_data.args.len() > arg_types.len() {
+                            return Err(self.create_error(
+                                "Argument count mismatch in variadic function",
+                                span,
+                            ));
+                        }
+                    } else if fn_data.args.len() != arg_types.len() {
+                        return Err(self.create_error("Argument count mismatch", span));
+                    }
+                    for (arg_ty, fn_arg_ty) in arg_types.iter().zip(fn_data.args.iter()) {
+                        if *arg_ty != *fn_arg_ty.ty {
+                            return Err(self.create_error("Argument type mismatch", span));
+                        }
+                    }
+                    Ok(fn_data.ret.as_ref().clone())
+                } else {
+                    Err(self.create_error("Function not found", span))
+                }
+            }
             Expr::Index {
                 name,
                 indices,
@@ -627,7 +715,129 @@ impl TychContext {
                 name,
                 variant,
                 span,
-            } => Err(self.create_error("Not yet handled", span)),
+            } => {
+                let enum_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(self.create_error("Expected identifier for enum literal", span))
+                    }
+                };
+                let enum_data = self.decl_data.enum_.iter().find(|e| e.name == enum_name);
+                if let Some(enum_data) = enum_data {
+                    let variant_name = match *variant {
+                        Expr::Iden { val, span } => val,
+                        _ => {
+                            return Err(
+                                self.create_error("Expected identifier for enum variant", span)
+                            )
+                        }
+                    };
+                    let variant_data = enum_data.variants.iter().find(|v| **v == variant_name);
+                    if let Some(variant_data) = variant_data {
+                        Ok(Type::UserDefined {
+                            name: Box::new(Expr::Iden {
+                                val: enum_name,
+                                span,
+                            }),
+                            generic_args: None,
+                        })
+                    } else {
+                        Err(self.create_error("Variant not found", span))
+                    }
+                } else {
+                    Err(self.create_error("Enum not found", span))
+                }
+            }
+        }
+    }
+
+    fn is_int(ty: Type) -> bool {
+        matches!(
+            ty,
+            Type::Builtin(BuiltinType::I8)
+                | Type::Builtin(BuiltinType::I16)
+                | Type::Builtin(BuiltinType::I32)
+                | Type::Builtin(BuiltinType::I64)
+                | Type::Builtin(BuiltinType::U8)
+                | Type::Builtin(BuiltinType::U16)
+                | Type::Builtin(BuiltinType::U32)
+                | Type::Builtin(BuiltinType::U64)
+        )
+    }
+    fn is_float(ty: Type) -> bool {
+        matches!(
+            ty,
+            Type::Builtin(BuiltinType::F32) | Type::Builtin(BuiltinType::F64)
+        )
+    }
+    fn is_pointer(ty: Type) -> bool {
+        matches!(ty, Type::Pointer(_))
+    }
+
+    fn is_bool(ty: Type) -> bool {
+        matches!(ty, Type::Builtin(BuiltinType::Bln))
+    }
+
+    pub fn check_compatible_type(
+        &self,
+        ty1: Type,
+        ty2: Type,
+        bin_op: BinaryOp,
+        span: Span,
+    ) -> Result<Type, Diagnostic<usize>> {
+        match bin_op {
+            BinaryOp::Mul | BinaryOp::Div | BinaryOp::Add | BinaryOp::Sub => {
+                if Self::is_int(ty1.clone()) && Self::is_int(ty2.clone())
+                    || Self::is_float(ty1.clone()) && Self::is_float(ty2.clone())
+                    || Self::is_float(ty1.clone()) && Self::is_int(ty2.clone())
+                {
+                    Ok(ty1)
+                } else if Self::is_int(ty1.clone()) && Self::is_float(ty2.clone()) {
+                    Ok(ty2)
+                } else {
+                    Err(self.create_error("Type mismatch", span))
+                }
+            }
+            BinaryOp::Mod | BinaryOp::BitXor | BinaryOp::BitAnd | BinaryOp::BitOr => {
+                if Self::is_int(ty1.clone()) && Self::is_int(ty2.clone()) {
+                    Ok(ty1)
+                } else {
+                    Err(self.create_error("Type mismatch", span))
+                }
+            }
+            BinaryOp::Shl | BinaryOp::Shr => {
+                if Self::is_int(ty1.clone()) && Self::is_int(ty2.clone()) {
+                    Ok(ty1)
+                } else {
+                    Err(self.create_error("Type mismatch", span))
+                }
+            }
+            BinaryOp::Lt | BinaryOp::Gt | BinaryOp::Lte | BinaryOp::Gte => {
+                if Self::is_int(ty1.clone()) && Self::is_int(ty2.clone())
+                    || Self::is_float(ty1.clone()) && Self::is_float(ty2.clone())
+                {
+                    Ok(Type::Builtin(BuiltinType::Bln))
+                } else {
+                    Err(self.create_error("Type mismatch", span))
+                }
+            }
+            BinaryOp::Eq | BinaryOp::Neq => {
+                if Self::is_int(ty1.clone()) && Self::is_int(ty2.clone())
+                    || Self::is_pointer(ty1.clone()) && Self::is_pointer(ty2.clone())
+                    || Self::is_bool(ty1.clone()) && Self::is_bool(ty2.clone())
+                {
+                    Ok(Type::Builtin(BuiltinType::Bln))
+                } else {
+                    Err(self.create_error("Type mismatch", span))
+                }
+            }
+            BinaryOp::And | BinaryOp::Or => {
+                if Self::is_bool(ty1.clone()) && Self::is_bool(ty2.clone()) {
+                    Ok(Type::Builtin(BuiltinType::Bln))
+                } else {
+                    Err(self.create_error("Type mismatch", span))
+                }
+            }
         }
     }
 }
