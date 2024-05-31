@@ -1,7 +1,7 @@
 fnc print(a : str, ...) : void;
 
 fnc sum(a : i32, b : i32, c : ptr* i32) : void {
-    ***c = a + b;
+    *c = a + b;
 }
 
 fnc main() : i32 {

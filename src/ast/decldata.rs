@@ -144,6 +144,18 @@ impl DeclData {
                     generics,
                 });
             }
+            Stmt::StructAssign {
+                name, ty: Some(ty), ..
+            } => {
+                let nm = match *name {
+                    Expr::Iden { val, .. } => val.clone(),
+                    _ => panic!("Invalid name for struct declaration"),
+                };
+                self.var.push(VarDeclData {
+                    name: nm,
+                    ty: ty.clone(),
+                });
+            }
             Stmt::FunctionDecl {
                 name,
                 args,
