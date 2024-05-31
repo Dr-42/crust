@@ -45,9 +45,9 @@ pub struct MyparseError {
 }
 
 pub fn parse(text: &str) -> Result<Box<nodes::Program>, MyparseError> {
-    let text = preremove_comments(text.to_string());
+    //let text = preremove_comments(text.to_string());
     let parser = parser::ProgramParser::new();
-    let res = parser.parse(&text);
+    let res = parser.parse(text);
     match res {
         Ok(program) => Ok(program),
         Err(e) => {

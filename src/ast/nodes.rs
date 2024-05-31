@@ -170,7 +170,7 @@ pub enum Expr {
     },
     MemberAccess {
         name: Box<Expr>,
-        member: Box<Expr>,
+        members: Vec<Box<Expr>>,
         span: Span,
     },
     ArrayLiteral {
@@ -306,6 +306,7 @@ pub enum Stmt {
     },
     Break(Span),
     Continue(Span),
+    Comment(Span),
 }
 
 impl Stmt {

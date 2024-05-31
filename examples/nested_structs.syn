@@ -29,14 +29,15 @@ struct employee {
 
 fnc main() : i32 {
 	john : employee;
-	john.name = "John";
-	john.id = 22;
-	john.salary = 3400.045;
 
 	john.res.house_no = 20;
 	john.res.street = "Main road";
 	john.res.state = "Utah";
 	john.res.pin = 11009876;
+
+	john.name = "John";
+	john.id = 22;
+	john.salary = 3400.045;
 
 	john.res.foon.foo = 42;
 	john.res.foon.bar = 69;

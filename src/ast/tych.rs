@@ -136,6 +136,7 @@ impl TychContext {
             Stmt::Block { stmts, decl_data } => {
                 self.decl_data.push_scope();
                 for stmt in stmts {
+                    self.decl_data.add(&stmt);
                     self.tych_stmt(*stmt)?;
                 }
                 self.decl_data.pop_scope();
@@ -317,14 +318,181 @@ impl TychContext {
                 fields,
                 span,
             } => {
-                todo!()
+                let struct_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(
+                            self.create_error("Expected identifier for struct assignment", span)
+                        )
+                    }
+                };
+                let struct_data = self
+                    .decl_data
+                    .struct_
+                    .iter()
+                    .find(|s| s.name == struct_name);
+                if let Some(struct_data) = struct_data {
+                    for field in fields {
+                        let field_name = *field.0;
+                        let field_value = *field.1;
+
+                        let (field_name, span) = match field_name {
+                            Expr::Iden { val, span } => (val, span),
+                            _ => {
+                                return Err(
+                                    self.create_error("Expected identifier for struct field", span)
+                                )
+                            }
+                        };
+
+                        let field_data = struct_data.fields.iter().find(|f| f.name == field_name);
+                        if let Some(field_data) = field_data {
+                            let field_ty = field_data.clone().ty;
+                            let field_value_ty = self.tych_expr(field_value)?;
+                            if *field_ty != field_value_ty {
+                                return Err(
+                                    self.create_error("Type mismatch in struct assignment", span)
+                                );
+                            }
+                        } else {
+                            return Err(self.create_error("Field not found", span));
+                        }
+                    }
+                } else {
+                    return Err(self.create_error("Struct not found", span));
+                }
             }
             Stmt::StructMemberAssign {
                 name,
                 value,
                 op,
                 span,
-            } => todo!(),
+            } => match *name {
+                Expr::MemberAccess {
+                    name,
+                    members,
+                    span,
+                } => match *name {
+                    Expr::Iden { val, span } => {
+                        if let Some(var_data) = self.decl_data.var.iter().find(|v| v.name == val) {
+                            let struct_type = match *var_data.clone().ty {
+                                Type::UserDefined { name, .. } => match *name {
+                                    Expr::Iden { val, span } => val,
+                                    _ => return Err(self.create_error("Expected identifier", span)),
+                                },
+                                _ => return Err(self.create_error("Expected struct type", span)),
+                            };
+                            let struct_data = self
+                                .decl_data
+                                .struct_
+                                .iter()
+                                .find(|s| s.name == struct_type);
+                            if let Some(mut struct_data_1) = struct_data {
+                                let mut members = members.clone();
+                                members.reverse();
+                                while let Some(member) = members.pop() {
+                                    let mut span_new;
+                                    let member_name = match *member {
+                                        Expr::Iden { val, span } => {
+                                            span_new = span;
+                                            val
+                                        }
+                                        _ => {
+                                            return Err(self.create_error(
+                                                "Expected identifier for member",
+                                                span,
+                                            ))
+                                        }
+                                    };
+                                    let member_data =
+                                        struct_data_1.fields.iter().find(|f| f.name == member_name);
+                                    if let Some(member_data) = member_data {
+                                        let member_ty = member_data.clone().ty;
+                                        // Check if this is the last member
+                                        if members.is_empty() {
+                                            let value_ty = self.tych_expr(*value.clone())?;
+                                            if *member_ty != value_ty {
+                                                return Err(self.create_error(
+                                                    "Type mismatch in struct member assignment",
+                                                    span,
+                                                ));
+                                            }
+                                        } else {
+                                            // Find the field in the struct
+                                            let field_data = struct_data_1
+                                                .fields
+                                                .iter()
+                                                .find(|f| f.name == member_name);
+                                            if let Some(field_data) = field_data {
+                                                let field_ty = field_data.clone().ty;
+                                                match *field_ty {
+                                                    Type::UserDefined { name, .. } => match *name {
+                                                        Expr::Iden { val, span } => {
+                                                            let struct_name = val;
+                                                            let new_struct_data =
+                                                                self.decl_data.struct_.iter().find(
+                                                                    |s| s.name == struct_name,
+                                                                );
+                                                            if let Some(new_struct_data) =
+                                                                new_struct_data
+                                                            {
+                                                                struct_data_1 = new_struct_data;
+                                                                continue;
+                                                            } else {
+                                                                return Err(self.create_error(
+                                                                    "Struct not found",
+                                                                    span,
+                                                                ));
+                                                            }
+                                                        }
+                                                        _ => {
+                                                            return Err(self.create_error(
+                                                                    "Expected identifier for struct member assignment",
+                                                                    span,
+                                                                ));
+                                                        }
+                                                    },
+                                                    _ => {
+                                                        return Err(self.create_error(
+                                                            "Expected struct type",
+                                                            span,
+                                                        ));
+                                                    }
+                                                }
+                                            } else {
+                                                return Err(self.create_error(
+                                                    "Member not found in struct",
+                                                    span,
+                                                ));
+                                            }
+                                        }
+                                    } else {
+                                        let err_msg = format!(
+                                            "Member {} not found for struct {}",
+                                            member_name, struct_data_1.name
+                                        );
+                                        return Err(self.create_error(&err_msg, span_new));
+                                    }
+                                }
+                            } else {
+                                return Err(self.create_error("Struct not found", span));
+                            }
+                        } else {
+                            return Err(self.create_error("Variable not found", span));
+                        }
+                    }
+                    _ => {
+                        return Err(self.create_error(
+                            "Expected identifier for struct member assignment",
+                            span,
+                        ))
+                    }
+                },
+                _ => {
+                    return Err(self
+                        .create_error("Expected member access for struct member assignment", span))
+                }
+            },
             Stmt::ArrayMemberAssign {
                 element,
                 value,
@@ -336,8 +504,27 @@ impl TychContext {
                 for_ty,
                 methods,
                 span,
-            } => todo!(),
-            Stmt::Match { expr, cases, span } => todo!(),
+            } => {
+                let trait_name = match *name {
+                    Expr::Iden { val, span } => val,
+                    _ => {
+                        return Err(
+                            self.create_error("Expected identifier for trait assignment", span)
+                        )
+                    }
+                };
+                let trait_data = self.decl_data.trait_.iter().find(|t| t.name == trait_name);
+                if let Some(trait_data) = trait_data {
+                    for method in methods {
+                        self.tych_stmt(*method)?;
+                    }
+                } else {
+                    return Err(self.create_error("Trait not found", span));
+                }
+            }
+            Stmt::Match { expr, cases, span } => {
+                todo!();
+            }
             Stmt::Break(span) => {
                 if !self.in_loop {
                     return Err(self.create_error("Break statement outside of loop", span));
@@ -348,11 +535,12 @@ impl TychContext {
                     return Err(self.create_error("Continue statement outside of loop", span));
                 }
             }
+            Stmt::Comment(span) => {}
         };
         Ok(())
     }
 
-    pub fn tych_expr(&mut self, expr: Expr) -> Result<Type, Diagnostic<usize>> {
+    pub fn tych_expr(&self, expr: Expr) -> Result<Type, Diagnostic<usize>> {
         match expr {
             Expr::Numeric { val, span } => Err(self.create_error("Not yet handled", span)),
             Expr::Strng { val, span } => Err(self.create_error("Not yet handled", span)),
@@ -375,9 +563,11 @@ impl TychContext {
                 indices,
                 span,
             } => Err(self.create_error("Not yet handled", span)),
-            Expr::MemberAccess { name, member, span } => {
-                Err(self.create_error("Not yet handled", span))
-            }
+            Expr::MemberAccess {
+                name,
+                members,
+                span,
+            } => Err(self.create_error("Not yet handled", span)),
             Expr::ArrayLiteral { vals, span } => Err(self.create_error("Not yet handled", span)),
             Expr::EnumLiteral {
                 name,

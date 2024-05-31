@@ -67,6 +67,7 @@ Stmt: Box<Stmt> = {
     ArrayMemberAssign,
     TraitAssign,
     Match,
+    Comment,
 };
 
 TypeAlias: Box<Stmt> = {
@@ -402,17 +403,11 @@ MemAccessOperands: Box<Expr> = {
 };
 
 MemberAccess: Box<Expr> = {
-    <ls:@L> <name:MemAccessOperands> <v:("." <MemAccessOperands>)+> <rs:@R> => {
-        let mut base = name;
-        for m in v {
-            base = Box::new(Expr::MemberAccess {
-                name: base,
-                member: m,
-                span: Span::new(ls as u32, rs as u32),
-            });
-        }
-        base
-    },
+    <ls:@L> <name:MemAccessOperands> <v:("." <MemAccessOperands>)+> <rs:@R> => Box::new(Expr::MemberAccess {
+        name: name,
+        members: v,
+        span: Span::new(ls as u32, rs as u32),
+    }),
 };
 
 Type: Box<Type> = {
@@ -960,4 +955,10 @@ Match: Box<Stmt> = {
         cases: cases,
         span: Span::new(ls as u32, rs as u32),
     }),
+};
+
+Comment: Box<Stmt> = {
+// Use regexes for the whole description
+    <l:@L> r"//.*" <r:@R> => Box::new(Stmt::Comment(Span::new(l as u32, r as u32))),
+    <l:@L> r"/\*.*\*/" <r:@R> => Box::new(Stmt::Comment(Span::new(l as u32, r as u32))),
 };

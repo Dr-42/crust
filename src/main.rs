@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if path.is_file() {
             let text = std::fs::read_to_string(&path)?;
             let mut files = SimpleFiles::new();
-            let file_name = path.file_name().unwrap().to_str().unwrap();
+            let file_name = path.to_str().unwrap();
             let file_id = files.add(file_name, &text);
             let program = ast::parse(&text);
             match program {
