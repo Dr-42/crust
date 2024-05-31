@@ -614,7 +614,17 @@ impl TychContext {
                 }
             }
             Stmt::Match { expr, cases, span } => {
-                todo!();
+                let expr_ty = self.tych_expr(*expr)?;
+                for case in cases {
+                    let case = *case;
+                    let pat = case.pattern;
+                    let body = case.body;
+                    let pat_type = self.tych_expr(*pat)?;
+                    if pat_type != expr_ty {
+                        return Err(self.create_error("Type mismatch in match pattern", span));
+                    }
+                    self.tych_stmt(*body)?;
+                }
             }
             Stmt::Break(span) => {
                 if !self.in_loop {
