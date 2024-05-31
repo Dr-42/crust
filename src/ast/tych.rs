@@ -750,7 +750,58 @@ impl TychContext {
                 name,
                 indices,
                 span,
-            } => Err(self.create_error("Not yet handled", span)),
+            } => match *name {
+                Expr::Iden { val, span } => {
+                    if let Some(var_data) = self.decl_data.var.iter().find(|v| v.name == val) {
+                        let var_ty = var_data.ty.clone();
+                        match *var_ty {
+                            Type::Array { base, lens } => {
+                                if lens.len() == indices.len() {
+                                    Ok(*base)
+                                } else {
+                                    Err(self.create_error("Trying to assign sublevel array", span))
+                                }
+                            }
+                            Type::Pointer(base) => {
+                                let mut indices = indices.clone();
+                                indices.reverse();
+                                let mut var_ty = base.clone();
+                                let mut base = base;
+                                while let Some(index) = indices.pop() {
+                                    let index_ty = self.tych_expr(*index)?;
+                                    if !Self::is_int(index_ty) {
+                                        return Err(
+                                            self.create_error("Expected integer index", span)
+                                        );
+                                    }
+                                    if indices.is_empty() {
+                                        return Ok(*base);
+                                    }
+                                    match *base {
+                                        Type::Pointer(bs) => {
+                                            base = bs;
+                                        }
+                                        _ => {
+                                            return Err(self.create_error(
+                                                "Trying to index beyond pointer depth",
+                                                span,
+                                            ))
+                                        }
+                                    }
+                                }
+                                Err(self.create_error(
+                                    "Pointer depth is less than amount indexed",
+                                    span,
+                                ))
+                            }
+                            _ => Err(self.create_error("Expected array or pointer type", span)),
+                        }
+                    } else {
+                        Err(self.create_error("Variable not found", span))
+                    }
+                }
+                _ => Err(self.create_error("Expected identifier for index access", span)),
+            },
             Expr::MemberAccess {
                 name,
                 members,
@@ -816,7 +867,31 @@ impl TychContext {
                 }
                 _ => Err(self.create_error("Expected identifier for member access", span)),
             },
-            Expr::ArrayLiteral { vals, span } => Err(self.create_error("Not yet handled", span)),
+            Expr::ArrayLiteral { vals, span } => {
+                let mut single_val_type = None;
+                for val in vals.clone() {
+                    let val_ty = self.tych_expr(*val)?;
+                    if single_val_type.is_none() {
+                        single_val_type = Some(val_ty);
+                    } else if single_val_type != Some(val_ty) {
+                        return Err(self.create_error("Array literal not uniform in type", span));
+                    }
+                }
+                match single_val_type.clone().unwrap() {
+                    Type::Array { base, lens } => {
+                        let mut new_lens = lens.clone();
+                        new_lens.insert(0, vals.len());
+                        Ok(Type::Array {
+                            base,
+                            lens: new_lens,
+                        })
+                    }
+                    _ => Ok(Type::Array {
+                        base: Box::new(single_val_type.unwrap()),
+                        lens: vec![vals.len()],
+                    }),
+                }
+            }
             Expr::EnumLiteral {
                 name,
                 variant,

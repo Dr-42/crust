@@ -24,21 +24,21 @@ fnc main() : i32 {
         sc : i32 = 1;
         // Calculate the next row
         while (sc < 50) {
-            if (arr[sc - 1] == 1 && arr[sc] == 1 && arr[sc + 1] == 1) {
+            if ((arr[sc - 1] == 1) && (arr[sc] == 1) && (arr[sc + 1] == 1))  {
                 arr_n[sc] = 0;
-            } else if (arr[sc - 1] == 1 && arr[sc] == 1 && arr[sc + 1] == 0){
+            } else if ((arr[sc - 1] == 1) && (arr[sc] == 1) && (arr[sc + 1] == 0)) {
                 arr_n[sc] = 1;
-            } else if (arr[sc - 1] == 1 && arr[sc] == 0 && arr[sc + 1] == 1){
+            } else if ((arr[sc - 1] == 1) && (arr[sc] == 0) && (arr[sc + 1] == 1)) {
                 arr_n[sc] = 1;
-            } else if (arr[sc - 1] == 1 && arr[sc] == 0 && arr[sc + 1] == 0){
+            } else if ((arr[sc - 1] == 1) && (arr[sc] == 0) && (arr[sc + 1] == 0)) {
                 arr_n[sc] = 0;
-            } else if (arr[sc - 1] == 0 && arr[sc] == 1 && arr[sc + 1] == 1){
+            } else if ((arr[sc - 1] == 0) && (arr[sc] == 1) && (arr[sc + 1] == 1)) {
                 arr_n[sc] = 1;
-            } else if (arr[sc - 1] == 0 && arr[sc] == 1 && arr[sc + 1] == 0){
+            } else if ((arr[sc - 1] == 0) && (arr[sc] == 1) && (arr[sc + 1] == 0)) {
                 arr_n[sc] = 1;
-            } else if (arr[sc - 1] == 0 && arr[sc] == 0 && arr[sc + 1] == 1){
+            } else if ((arr[sc - 1] == 0) && (arr[sc] == 0) && (arr[sc + 1] == 1)) {
                 arr_n[sc] = 1;
-            } else if (arr[sc - 1] == 0 && arr[sc] == 0 && arr[sc + 1] == 0){
+            } else if ((arr[sc - 1] == 0) && (arr[sc] == 0) && (arr[sc + 1] == 0)) {
                 arr_n[sc] = 0;
             }
 
