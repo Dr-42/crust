@@ -57,6 +57,7 @@ Stmt: Box<Stmt> = {
     Continue,
     Break,
     StructDecl,
+    ImplDecl,
     EnumDecl,
     FunctionDecl,
     TraitDecl,
@@ -637,6 +638,14 @@ StructDecl: Box<Stmt> = {
         name: name,
         fields: fields,
         generics: Some(gens),
+        span: Span::new(ls as u32, rs as u32),
+    }),
+};
+
+ImplDecl: Box<Stmt> = {
+    <ls:@L> "impl" <name:Iden> "{" <methods:(FunctionDecl)+> "}" <rs:@R> => Box::new(Stmt::ImplDecl {
+        name: name,
+        methods: methods,
         span: Span::new(ls as u32, rs as u32),
     }),
 };

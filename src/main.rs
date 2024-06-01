@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use ast::tych::TychContext;
+use codegen::CodegenContext;
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,
@@ -12,6 +13,7 @@ use codespan_reporting::{
 use lalrpop_util::lalrpop_mod;
 
 pub mod ast;
+pub mod codegen;
 
 lalrpop_mod!(pub parser);
 
@@ -38,9 +40,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     // Type check
                     let mut tych_context = TychContext::new(file_id);
-                    match tych_context.tych_program(file_id, *program) {
-                        Ok(_) => {
+                    match tych_context.tych_program(*program.clone()) {
+                        Ok(()) => {
                             println!("Type Check Pass: {:?}", path);
+
+                            // Codegen
+                            // let inkwell_context = inkwell::context::Context::create();
+                            // let codegen_ctx = CodegenContext::new(&inkwell_context);
+                            // codegen_ctx.codegen_program(*program);
                         }
                         Err(e) => {
                             eprintln!("Error type checking file: {:?}", path);

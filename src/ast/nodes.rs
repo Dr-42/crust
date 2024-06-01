@@ -281,7 +281,7 @@ pub enum Stmt {
         span: Span,
     },
     ImplDecl {
-        ty: Type,
+        name: Box<Expr>,
         methods: Vec<Box<Stmt>>,
         span: Span,
     },

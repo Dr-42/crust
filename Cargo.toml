@@ -11,3 +11,4 @@ lalrpop = "0.20.0"
 codespan = "0.11.1"
 codespan-reporting = "0.11.1"
 lalrpop-util = { version = "0.20.0", features = ["lexer", "unicode"]}
+inkwell = { version = "0.4.0", features = ["llvm17-0"] }

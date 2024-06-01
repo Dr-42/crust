@@ -46,11 +46,7 @@ impl TychContext {
         diag
     }
 
-    pub fn tych_program(
-        &mut self,
-        file_id: usize,
-        program: Program,
-    ) -> Result<(), Diagnostic<usize>> {
+    pub fn tych_program(&mut self, program: Program) -> Result<(), Diagnostic<usize>> {
         for stmt in program.stmts {
             self.decl_data.add(&stmt);
             self.tych_stmt(*stmt)?;
@@ -178,18 +174,17 @@ impl TychContext {
                 }
                 _ => return Err(self.create_error("Expected identifier", span)),
             },
-            Stmt::ImplDecl { ty, methods, span } => {
+            Stmt::ImplDecl {
+                name,
+                methods,
+                span,
+            } => {
                 let struct_data = self.decl_data.struct_.clone();
-                let ty_name = match ty {
-                    Type::UserDefined { name, .. } => match *name {
-                        Expr::Iden { val, span } => val,
-                        _ => {
-                            return Err(self.create_error("Expected identifier", span));
-                        }
-                    },
+                let ty_name = match *name {
+                    Expr::Iden { val, span } => val,
                     _ => {
                         return Err(
-                            self.create_error("Expected user defined type to impl methods", span)
+                            self.create_error("Expected identifier for impl declaration", span)
                         )
                     }
                 };
@@ -434,7 +429,48 @@ impl TychContext {
                     span,
                 } => match *name {
                     Expr::Iden { val, span } => {
-                        if let Some(var_data) = self.decl_data.var.iter().find(|v| v.name == val) {
+                        if val == "self" {
+                            if let Some(struct_data) = self.impl_type.as_ref() {
+                                let mut members = members.clone();
+                                members.reverse();
+                                while let Some(member) = members.pop() {
+                                    let member_name =
+                                        match *member {
+                                            Expr::Iden { val, span } => val,
+                                            _ => return Err(self.create_error(
+                                                "Expected identifier for struct member assignment",
+                                                span,
+                                            )),
+                                        };
+                                    let member_data =
+                                        struct_data.fields.iter().find(|f| f.name == member_name);
+                                    if let Some(member_data) = member_data {
+                                        let member_ty = member_data.clone().ty;
+                                        // Check if this is the last member
+                                        if members.is_empty() {
+                                            let value_ty = self.tych_expr(*value.clone())?;
+                                            if *member_ty != value_ty {
+                                                return Err(self.create_error(
+                                                    "Type mismatch in struct member assignment",
+                                                    span,
+                                                ));
+                                            }
+                                        } else {
+                                            return Err(self.create_error(
+                                                "Member access beyond struct depth",
+                                                span,
+                                            ));
+                                        }
+                                    } else {
+                                        return Err(self.create_error("Member not found", span));
+                                    }
+                                }
+                            } else {
+                                return Err(self.create_error("No struct type found", span));
+                            }
+                        } else if let Some(var_data) =
+                            self.decl_data.var.iter().find(|v| v.name == val)
+                        {
                             let struct_type = match *var_data.clone().ty {
                                 Type::UserDefined { name, .. } => match *name {
                                     Expr::Iden { val, span } => val,
@@ -808,61 +844,100 @@ impl TychContext {
                 span,
             } => match *name {
                 Expr::Iden { val, span } => {
-                    let var_data = self.decl_data.var.iter().find(|v| v.name == val);
-                    if let Some(var_data) = var_data {
-                        let mut members = members.clone();
-                        members.reverse();
-                        let mut var_ty = var_data.ty.clone();
-                        while let Some(member) = members.pop() {
-                            let member_name = match *member {
-                                Expr::Iden { val, span } => val,
-                                _ => {
-                                    return Err(self.create_error(
-                                        "Expected identifier for member access",
-                                        span,
-                                    ))
-                                }
-                            };
-                            let member_data = match *var_ty {
-                                Type::UserDefined { name, .. } => {
-                                    let struct_name = match *name {
-                                        Expr::Iden { val, span } => val,
-                                        _ => {
-                                            return Err(self.create_error(
-                                                "Expected identifier for member access",
-                                                span,
-                                            ))
-                                        }
-                                    };
-                                    let struct_data = self
-                                        .decl_data
-                                        .struct_
-                                        .iter()
-                                        .find(|s| s.name == struct_name);
-                                    if let Some(struct_data) = struct_data {
-                                        struct_data.fields.iter().find(|f| f.name == member_name)
-                                    } else {
-                                        return Err(self.create_error("Struct not found", span));
+                    if val == "self" {
+                        if let Some(struct_data) = self.impl_type.as_ref() {
+                            let mut members = members.clone();
+                            members.reverse();
+                            let mut var_ty = Type::Builtin(BuiltinType::Slf);
+                            while let Some(member) = members.pop() {
+                                let member_name = match *member {
+                                    Expr::Iden { val, span } => val,
+                                    _ => {
+                                        return Err(self.create_error(
+                                            "Expected identifier for member access",
+                                            span,
+                                        ))
                                     }
+                                };
+                                let member_data =
+                                    struct_data.fields.iter().find(|f| f.name == member_name);
+                                if let Some(member_data) = member_data {
+                                    var_ty = *member_data.ty.clone();
+                                } else {
+                                    return Err(self.create_error("Member not found", span));
                                 }
-                                Type::Builtin(BuiltinType::Slf) => {
-                                    if let Some(struct_data) = self.impl_type.as_ref() {
-                                        struct_data.fields.iter().find(|f| f.name == member_name)
-                                    } else {
-                                        return Err(self.create_error("No struct type found", span));
-                                    }
-                                }
-                                _ => return Err(self.create_error("Expected struct type", span)),
-                            };
-                            if let Some(member_data) = member_data {
-                                var_ty = member_data.ty.clone();
-                            } else {
-                                return Err(self.create_error("Member not found", span));
                             }
+                            Ok(var_ty)
+                        } else {
+                            Err(self.create_error("No struct type found", span))
                         }
-                        Ok(*var_ty)
                     } else {
-                        Err(self.create_error("Variable not found", span))
+                        let var_data = self.decl_data.var.iter().find(|v| v.name == val);
+                        if let Some(var_data) = var_data {
+                            let mut members = members.clone();
+                            members.reverse();
+                            let mut var_ty = var_data.ty.clone();
+                            while let Some(member) = members.pop() {
+                                let member_name = match *member {
+                                    Expr::Iden { val, span } => val,
+                                    _ => {
+                                        return Err(self.create_error(
+                                            "Expected identifier for member access",
+                                            span,
+                                        ))
+                                    }
+                                };
+                                let member_data = match *var_ty {
+                                    Type::UserDefined { name, .. } => {
+                                        let struct_name = match *name {
+                                            Expr::Iden { val, span } => val,
+                                            _ => {
+                                                return Err(self.create_error(
+                                                    "Expected identifier for member access",
+                                                    span,
+                                                ))
+                                            }
+                                        };
+                                        let struct_data = self
+                                            .decl_data
+                                            .struct_
+                                            .iter()
+                                            .find(|s| s.name == struct_name);
+                                        if let Some(struct_data) = struct_data {
+                                            struct_data
+                                                .fields
+                                                .iter()
+                                                .find(|f| f.name == member_name)
+                                        } else {
+                                            return Err(self.create_error("Struct not found", span));
+                                        }
+                                    }
+                                    Type::Builtin(BuiltinType::Slf) => {
+                                        if let Some(struct_data) = self.impl_type.as_ref() {
+                                            struct_data
+                                                .fields
+                                                .iter()
+                                                .find(|f| f.name == member_name)
+                                        } else {
+                                            return Err(
+                                                self.create_error("No struct type found", span)
+                                            );
+                                        }
+                                    }
+                                    _ => {
+                                        return Err(self.create_error("Expected struct type", span))
+                                    }
+                                };
+                                if let Some(member_data) = member_data {
+                                    var_ty = member_data.ty.clone();
+                                } else {
+                                    return Err(self.create_error("Member not found", span));
+                                }
+                            }
+                            Ok(*var_ty)
+                        } else {
+                            Err(self.create_error("Variable not found", span))
+                        }
                     }
                 }
                 _ => Err(self.create_error("Expected identifier for member access", span)),
