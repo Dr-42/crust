@@ -422,9 +422,22 @@ impl TychContext {
                 value,
                 op,
                 span,
-            } => {
-                return Err(self.create_error("Member access not implemented", span));
-            }
+            } => match *name {
+                Expr::MemberAccess { .. } => {
+                    let member_ty = self.tych_expr(*name)?;
+                    let value_ty = self.tych_expr(*value)?;
+                    if member_ty != value_ty {
+                        return Err(
+                            self.create_error("Type mismatch in struct member assignment", span)
+                        );
+                    }
+                }
+                _ => {
+                    return Err(
+                        self.create_error("Expected member access for struct assignment", span)
+                    )
+                }
+            },
             Stmt::ArrayMemberAssign {
                 element,
                 value,
