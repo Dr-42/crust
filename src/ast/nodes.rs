@@ -218,8 +218,8 @@ pub enum Expr {
         span: Span,
     },
     MemberAccess {
-        name: Box<Expr>,
-        members: Vec<Box<Expr>>,
+        strct: Box<Expr>,
+        member: Box<Expr>,
         span: Span,
     },
     ArrayLiteral {

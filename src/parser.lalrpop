@@ -392,24 +392,23 @@ Index: Box<Expr> = {
 };
 
 MemAccessOperands: Box<Expr> = {
-    #[precedence(level="0")]
-    Numeric,
-    Strng,
-    Flt,
-    Chr,
-    Bln,
     Iden,
-    Index,
     Call,
 };
 
 MemberAccess: Box<Expr> = {
-    <ls:@L> <name:MemAccessOperands> <v:("." <MemAccessOperands>)+> <rs:@R> => Box::new(Expr::MemberAccess {
-        name: name,
-        members: v,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-};
+    <ls:@L> <name:MemAccessOperands> <v:("." <MemAccessOperands>)+> <rs:@R> => {
+        let mut base = name;
+        for val in v {
+            base = Box::new(Expr::MemberAccess {
+                strct: base,
+                member: val,
+                span: Span::new(ls as u32, rs as u32),
+            });
+        }
+        base
+    }
+}
 
 Type: Box<Type> = {
     BuilinType => Box::new(Type::Builtin(<>)),
