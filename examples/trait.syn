@@ -23,7 +23,6 @@ impl Add for Vec2 {
 			x = a.x + b.x,
 			y = a.y + b.y,
 		};
-
 		ret return;
 	}
 }

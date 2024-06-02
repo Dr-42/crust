@@ -1,16 +1,7 @@
-#![allow(dead_code, unused)]
-use std::error::Error;
-
-use codespan_reporting::{
-    diagnostic::{Diagnostic, Label},
-    term::{
-        self,
-        termcolor::{ColorChoice, StandardStream},
-    },
-};
+use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 use super::{
-    decldata::{DeclData, FunctionDeclData, StructDeclData, VarDeclData},
+    decldata::{DeclData, FunctionDeclData, StructDeclData},
     nodes::{BinaryOp, BuiltinType, Expr, Program, Stmt, Type, UnaryOp},
     Span,
 };
@@ -36,14 +27,9 @@ impl TychContext {
 
     pub fn create_error(&self, msg: &str, span: Span) -> Diagnostic<usize> {
         eprintln!("Error detected during type checking: {}", msg);
-        let diag = Diagnostic::error()
+        Diagnostic::error()
             .with_message(msg)
-            .with_labels(vec![Label::primary(self.file_id, span).with_message("here")]);
-
-        let writer = StandardStream::stderr(ColorChoice::Always);
-        let config = codespan_reporting::term::Config::default();
-
-        diag
+            .with_labels(vec![Label::primary(self.file_id, span).with_message("here")])
     }
 
     pub fn tych_program(&mut self, program: Program) -> Result<(), Diagnostic<usize>> {
@@ -60,7 +46,7 @@ impl TychContext {
                 let _ = self.tych_expr(*expr)?;
                 return Ok(());
             }
-            Stmt::TypeAlias { name, ty, span } => {
+            Stmt::TypeAlias { .. } => {
                 return Ok(());
             }
             Stmt::If {
@@ -131,7 +117,7 @@ impl TychContext {
                 }
                 return Ok(());
             }
-            Stmt::Block { stmts, decl_data } => {
+            Stmt::Block { stmts } => {
                 self.decl_data.push_scope();
                 for stmt in stmts {
                     self.decl_data.add(&stmt);
@@ -141,13 +127,12 @@ impl TychContext {
             }
             Stmt::VarDecl {
                 name,
-                qualifiers,
                 ty,
                 value,
                 span,
+                ..
             } => match *name {
-                Expr::Iden { val, span } => {
-                    let var_name = val;
+                Expr::Iden { span, .. } => {
                     if let Some(value) = value {
                         let value_ty = self.tych_expr(*value)?;
                         if *ty != value_ty {
@@ -161,8 +146,7 @@ impl TychContext {
                 _ => return Err(self.create_error("Expected identifier", span)),
             },
             Stmt::StructDecl { name, fields, span } => match *name {
-                Expr::Iden { val, span } => {
-                    let struct_name = val;
+                Expr::Iden { .. } => {
                     for field in fields {
                         self.tych_stmt(*field)?;
                     }
@@ -176,7 +160,7 @@ impl TychContext {
             } => {
                 let struct_data = self.decl_data.struct_.clone();
                 let ty_name = match *name {
-                    Expr::Iden { val, span } => val,
+                    Expr::Iden { val, .. } => val,
                     _ => {
                         return Err(
                             self.create_error("Expected identifier for impl declaration", span)
@@ -197,8 +181,8 @@ impl TychContext {
                 methods,
                 span,
             } => {
-                let trait_name = match *name {
-                    Expr::Iden { val, span } => val,
+                match *name {
+                    Expr::Iden { .. } => {}
                     _ => return Err(self.create_error("Expected identifier for trait name", span)),
                 };
                 for method in methods {
@@ -210,17 +194,15 @@ impl TychContext {
                 variants,
                 span,
             } => {
-                let enum_name = match *name {
-                    Expr::Iden { val, span } => val,
+                match *name {
+                    Expr::Iden { .. } => {}
                     _ => {
                         return Err(self.create_error("Expected identifier for an enum name", span))
                     }
                 };
                 for variant in variants {
                     match *variant {
-                        Expr::Iden { val, span } => {
-                            let variant_name = val;
-                        }
+                        Expr::Iden { .. } => {}
                         _ => {
                             return Err(
                                 self.create_error("Expected identifier in enum variants", span)
@@ -230,8 +212,8 @@ impl TychContext {
                 }
             }
             Stmt::UnionDecl { name, fields, span } => {
-                let union_name = match *name {
-                    Expr::Iden { val, span } => val,
+                match *name {
+                    Expr::Iden { .. } => {}
                     _ => {
                         return Err(self.create_error("Expected identifier for a union name", span))
                     }
@@ -242,15 +224,14 @@ impl TychContext {
             }
             Stmt::FunctionDecl {
                 name,
-                qualifiers,
                 args,
                 ret,
                 body,
-                isvararg,
                 span,
+                ..
             } => {
-                let fn_name = match *name {
-                    Expr::Iden { val, span } => val,
+                match *name {
+                    Expr::Iden { .. } => {}
                     _ => {
                         return Err(self.create_error("Expected identifier for function name", span))
                     }
@@ -262,13 +243,13 @@ impl TychContext {
                     match *arg.clone() {
                         Stmt::VarDecl {
                             name,
-                            qualifiers,
                             ty,
                             value,
                             span,
+                            ..
                         } => {
-                            let var_name = match *name {
-                                Expr::Iden { val, span } => val,
+                            match *name {
+                                Expr::Iden { .. } => {}
                                 _ => {
                                     return Err(self.create_error(
                                         "Expected identifier for function arguments",
@@ -277,6 +258,15 @@ impl TychContext {
                                 }
                             };
                             let var_ty = *ty;
+                            if let Some(value) = value {
+                                let value_ty = self.tych_expr(*value)?;
+                                if var_ty != value_ty {
+                                    return Err(self.create_error(
+                                        "Type mismatch in function argument assignment",
+                                        span,
+                                    ));
+                                }
+                            }
                             self.decl_data.add(&arg.clone())
                         }
                         _ => {
@@ -296,11 +286,11 @@ impl TychContext {
             Stmt::VarAssign {
                 name,
                 value,
-                op,
+                op: _op, // TODO: Implement operator checking based on type (traits and builtins)
                 span,
             } => {
                 let var_name = match *name {
-                    Expr::Iden { val, span } => val,
+                    Expr::Iden { val, .. } => val,
                     _ => {
                         return Err(
                             self.create_error("Expected identifier for variable assignment", span)
@@ -321,7 +311,7 @@ impl TychContext {
             Stmt::DerefAssign {
                 value,
                 expr,
-                op,
+                op: _op, // TODO: Implement operator checking based on type (traits and builtins)
                 span,
             } => {
                 let value_ty = self.tych_expr(*value)?;
@@ -332,15 +322,15 @@ impl TychContext {
             }
             Stmt::StructAssign {
                 name,
-                qualifiers,
                 ty,
                 fields,
                 span,
+                ..
             } => {
                 let struct_data = if let Some(ty) = ty {
                     match *ty {
                         Type::UserDefined { name, .. } => match *name {
-                            Expr::Iden { val, span } => {
+                            Expr::Iden { val, .. } => {
                                 self.decl_data.struct_.iter().find(|s| s.name == val)
                             }
                             _ => {
@@ -366,7 +356,7 @@ impl TychContext {
                     }
                 } else {
                     match *name {
-                        Expr::Iden { val, span } => {
+                        Expr::Iden { val, .. } => {
                             self.decl_data.struct_.iter().find(|s| s.name == val)
                         }
                         _ => {
@@ -409,7 +399,7 @@ impl TychContext {
             Stmt::StructMemberAssign {
                 name,
                 value,
-                op,
+                op: _op, // TODO: Implement operator checking based on type (traits and builtins)
                 span,
             } => match *name {
                 Expr::MemberAccess { .. } => {
@@ -430,7 +420,7 @@ impl TychContext {
             Stmt::ArrayMemberAssign {
                 element,
                 value,
-                op,
+                op: _op, // TODO: Implement operator checking based on type (traits and builtins)
                 span,
             } => {
                 let element_ty = self.tych_expr(*element)?;
@@ -446,7 +436,7 @@ impl TychContext {
                 span,
             } => {
                 let trait_name = match *name {
-                    Expr::Iden { val, span } => val,
+                    Expr::Iden { val, .. } => val,
                     _ => {
                         return Err(
                             self.create_error("Expected identifier for trait assignment", span)
@@ -480,6 +470,107 @@ impl TychContext {
                             return Err(self.create_error("Expected user defined type", span));
                         }
                     }
+                    let unimplemented_methods = trait_data
+                        .methods
+                        .iter()
+                        .filter(|m| {
+                            !methods.iter().any(|mm| {
+                                let mm = *mm.clone();
+                                match mm {
+                                    Stmt::FunctionDecl { name, .. } => {
+                                        let method_name = match *name {
+                                            Expr::Iden { val, .. } => val,
+                                            _ => unreachable!(),
+                                        };
+                                        m.name == method_name
+                                    }
+                                    _ => unreachable!(),
+                                }
+                            })
+                        })
+                        .collect::<Vec<&FunctionDeclData>>();
+                    if !unimplemented_methods.is_empty() {
+                        let unimplemented_methods = unimplemented_methods
+                            .iter()
+                            .map(|m| m.name.clone())
+                            .collect::<Vec<String>>();
+                        let err_msg = format!(
+                            "Trait {:?} has unimplemented methods: {:?}",
+                            trait_name, unimplemented_methods
+                        );
+                        return Err(self.create_error(&err_msg, span));
+                    }
+                    let extra_methods = methods
+                        .iter()
+                        .filter(|mm| {
+                            let mm = *mm;
+                            match *mm.clone() {
+                                Stmt::FunctionDecl {
+                                    name,
+                                    args,
+                                    ret,
+                                    isvararg,
+                                    ..
+                                } => {
+                                    let method_name = match *name {
+                                        Expr::Iden { val, .. } => val,
+                                        _ => unreachable!(),
+                                    };
+                                    let name_match_function =
+                                        trait_data.methods.iter().find(|m| m.name == method_name);
+                                    if let Some(name_match_function) = name_match_function {
+                                        let name_match_args = name_match_function.args.clone();
+                                        let name_match_ret = name_match_function.ret.clone();
+                                        let name_match_isvararg = name_match_function.variadic;
+
+                                        let arg_type_matching = args
+                                            .iter()
+                                            .zip(name_match_args.iter())
+                                            .all(|(arg, name_match_arg)| match *arg.clone() {
+                                                Stmt::VarDecl { ty, .. } => {
+                                                    let arg_ty = *ty;
+                                                    let name_match_arg_ty =
+                                                        name_match_arg.ty.clone();
+                                                    if arg_ty != *name_match_arg_ty {
+                                                        return false;
+                                                    }
+                                                    true
+                                                }
+                                                _ => unreachable!(),
+                                            });
+
+                                        !arg_type_matching
+                                            || ret != name_match_ret
+                                            || isvararg != name_match_isvararg
+                                    } else {
+                                        true
+                                    }
+                                }
+                                _ => unreachable!(),
+                            }
+                        })
+                        .collect::<Vec<&Box<Stmt>>>();
+                    if !extra_methods.is_empty() {
+                        let extra_methods = extra_methods
+                            .iter()
+                            .map(|m| {
+                                let mm = *m;
+                                match *mm.clone() {
+                                    Stmt::FunctionDecl { name, .. } => match *name {
+                                        Expr::Iden { val, .. } => val,
+                                        _ => unreachable!(),
+                                    },
+                                    _ => unreachable!(),
+                                }
+                            })
+                            .collect::<Vec<String>>();
+                        let err_msg = format!(
+                            "Trait {:?} has extra methods: {:?}",
+                            trait_name, extra_methods
+                        );
+                        return Err(self.create_error(&err_msg, span));
+                    }
+
                     for method in methods {
                         self.tych_stmt(*method)?;
                     }
@@ -510,18 +601,18 @@ impl TychContext {
                     return Err(self.create_error("Continue statement outside of loop", span));
                 }
             }
-            Stmt::Comment(span) => {}
+            Stmt::Comment(_span) => {}
         };
         Ok(())
     }
 
     pub fn tych_expr(&self, expr: Expr) -> Result<Type, Diagnostic<usize>> {
         match expr {
-            Expr::Numeric { val, span } => Ok(Type::Builtin(BuiltinType::I32)),
-            Expr::Strng { val, span } => Ok(Type::Builtin(BuiltinType::Str)),
-            Expr::Flt { val, span } => Ok(Type::Builtin(BuiltinType::F32)),
-            Expr::Chr { val, span } => Ok(Type::Builtin(BuiltinType::Chr)),
-            Expr::Bln { val, span } => Ok(Type::Builtin(BuiltinType::Bln)),
+            Expr::Numeric { .. } => Ok(Type::Builtin(BuiltinType::I32)),
+            Expr::Strng { .. } => Ok(Type::Builtin(BuiltinType::Str)),
+            Expr::Flt { .. } => Ok(Type::Builtin(BuiltinType::F32)),
+            Expr::Chr { .. } => Ok(Type::Builtin(BuiltinType::Chr)),
+            Expr::Bln { .. } => Ok(Type::Builtin(BuiltinType::Bln)),
             Expr::Iden { val, span } => {
                 let var_data = self.decl_data.var.iter().find(|v| v.name == val);
                 if let Some(var_data) = var_data {
@@ -555,7 +646,7 @@ impl TychContext {
             }
             Expr::Call { name, args, span } => {
                 let fn_name = match *name {
-                    Expr::Iden { val, span } => val,
+                    Expr::Iden { val, .. } => val,
                     _ => {
                         return Err(self.create_error("Expected identifier for function call", span))
                     }
@@ -581,7 +672,7 @@ impl TychContext {
                             Type::TraitType { traits } => match arg_ty {
                                 Type::UserDefined { name } => {
                                     let arg_name = match *name.clone() {
-                                        Expr::Iden { val, span } => val,
+                                        Expr::Iden { val, .. } => val,
                                         _ => {
                                             return Err(self.create_error(
                                                 "Expected identifier for trait access",
@@ -594,7 +685,7 @@ impl TychContext {
                                     let trait_names = traits
                                         .iter()
                                         .map(|t| match *t.clone() {
-                                            Expr::Iden { val, span } => Ok(val),
+                                            Expr::Iden { val, .. } => Ok(val),
                                             _ => Err(self.create_error(
                                                 "Expected identifier for trait type parameter",
                                                 span,
@@ -661,7 +752,7 @@ impl TychContext {
                                     Type::TraitType { traits } => match arg_ty {
                                         Type::UserDefined { name } => {
                                             let arg_name = match *name.clone() {
-                                                Expr::Iden { val, span } => val,
+                                                Expr::Iden { val, .. } => val,
                                                 _ => {
                                                     return Err(self.create_error(
                                                         "Expected identifier for trait access",
@@ -678,7 +769,7 @@ impl TychContext {
                                                 .iter()
                                                 .map(|t| {
                                                     match *t.clone() {
-                                            Expr::Iden { val, span } => Ok(val),
+                                            Expr::Iden { val, .. } => Ok(val),
                                             _ => Err(self.create_error(
                                                 "Expected identifier for trait type parameter",
                                                 span,
@@ -755,8 +846,7 @@ impl TychContext {
                             Type::Pointer(base) => {
                                 let mut indices = indices.clone();
                                 indices.reverse();
-                                let mut var_ty = base.clone();
-                                let mut base = base;
+                                let mut base = base.clone();
                                 while let Some(index) = indices.pop() {
                                     let index_ty = self.tych_expr(*index)?;
                                     if !Self::is_int(index_ty) {
@@ -811,7 +901,7 @@ impl TychContext {
                             match *struct_var.ty.clone() {
                                 Type::UserDefined { name, .. } => {
                                     let struct_name = match *name {
-                                        Expr::Iden { val, span } => val,
+                                        Expr::Iden { val, .. } => val,
                                         _ => {
                                             return Err(self.create_error(
                                                 "Expected identifier for struct access",
@@ -842,7 +932,7 @@ impl TychContext {
                                     let mut trait_names = Vec::new();
                                     for trait_name in traits {
                                         let trait_name = match *trait_name {
-                                            Expr::Iden { val, span } => val,
+                                            Expr::Iden { val, .. } => val,
                                             _ => {
                                                 return Err(self.create_error(
                                                     "Expected identifier for trait access",
@@ -885,7 +975,7 @@ impl TychContext {
                         match str_ty {
                             Type::UserDefined { name, .. } => {
                                 let struct_name = match *name {
-                                    Expr::Iden { val, span } => val,
+                                    Expr::Iden { val, .. } => val,
                                     _ => {
                                         return Err(self.create_error(
                                             "Expected identifier for struct access",
@@ -931,7 +1021,7 @@ impl TychContext {
                     }
                     Expr::Call { name, args, span } => {
                         let fn_name = match *name {
-                            Expr::Iden { val, span } => val,
+                            Expr::Iden { val, .. } => val,
                             _ => {
                                 return Err(self.create_error(
                                     "Expected identifier for member function call",
@@ -939,14 +1029,14 @@ impl TychContext {
                                 ))
                             }
                         };
-                        if let Some(mut fn_data) =
+                        if let Some(fn_data) =
                             struct_data.methods.iter().find(|m| m.name == fn_name)
                         {
                             let mut fn_data = fn_data.clone();
                             let box_built_in = Box::new(Type::Builtin(BuiltinType::Slf));
-                            let ptr_built_in = Type::Pointer(box_built_in);
+                            let _ptr_built_in = Type::Pointer(box_built_in);
                             if let Some(first_arg) = fn_data.args.first() {
-                                if matches!(&first_arg.ty, ptr_built_in) {
+                                if matches!(&first_arg.ty, _ptr_built_in) {
                                     fn_data.args.remove(0);
                                 } else {
                                     return Err(
@@ -1017,7 +1107,7 @@ impl TychContext {
                 span,
             } => {
                 let enum_name = match *name {
-                    Expr::Iden { val, span } => val,
+                    Expr::Iden { val, .. } => val,
                     _ => {
                         return Err(self.create_error("Expected identifier for enum literal", span))
                     }
@@ -1025,7 +1115,7 @@ impl TychContext {
                 let enum_data = self.decl_data.enum_.iter().find(|e| e.name == enum_name);
                 if let Some(enum_data) = enum_data {
                     let variant_name = match *variant {
-                        Expr::Iden { val, span } => val,
+                        Expr::Iden { val, .. } => val,
                         _ => {
                             return Err(
                                 self.create_error("Expected identifier for enum variant", span)
@@ -1033,7 +1123,7 @@ impl TychContext {
                         }
                     };
                     let variant_data = enum_data.variants.iter().find(|v| **v == variant_name);
-                    if let Some(variant_data) = variant_data {
+                    if variant_data.is_some() {
                         Ok(Type::UserDefined {
                             name: Box::new(Expr::Iden {
                                 val: enum_name,
