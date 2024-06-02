@@ -219,6 +219,91 @@ impl DeclData {
                     panic!("Struct not found for impl declaration");
                 }
             }
+            Stmt::TraitAssign {
+                name,
+                for_ty,
+                methods,
+                ..
+            } => {
+                let nm = match *name {
+                    Expr::Iden { val, .. } => val.clone(),
+                    _ => panic!("Invalid name for struct declaration"),
+                };
+                let mut meths = Vec::new();
+                for m in methods.iter() {
+                    match *m.clone() {
+                        Stmt::FunctionDecl {
+                            name,
+                            args,
+                            ret,
+                            generics,
+                            isvararg,
+                            ..
+                        } => {
+                            let nm = match *name {
+                                Expr::Iden { val, .. } => val.clone(),
+                                _ => panic!("Invalid name for function declaration"),
+                            };
+                            let mut arg = Vec::new();
+                            for a in args.iter() {
+                                match *a.clone() {
+                                    Stmt::VarDecl { name, ty, .. } => {
+                                        let nm = match *name {
+                                            Expr::Iden { val, .. } => val.clone(),
+                                            _ => panic!("Invalid name for function argument"),
+                                        };
+                                        arg.push(VarDeclData {
+                                            name: nm,
+                                            ty: ty.clone(),
+                                        });
+                                    }
+                                    _ => {
+                                        panic!("Invalid argument in function declaration");
+                                    }
+                                };
+                            }
+                            let generics = match generics {
+                                Some(ref g) => {
+                                    let mut res = Vec::new();
+                                    for gen in g.iter() {
+                                        res.push(*gen.clone());
+                                    }
+                                    Some(res)
+                                }
+                                None => None,
+                            };
+                            meths.push(FunctionDeclData {
+                                name: nm,
+                                args: arg,
+                                ret: ret.clone(),
+                                generics,
+                                variadic: isvararg,
+                            });
+                        }
+                        _ => {
+                            panic!("Invalid method in struct declaration");
+                        }
+                    };
+                }
+                let struct_name = match *for_ty {
+                    Type::UserDefined { name, .. } => match *name {
+                        Expr::Iden { val, .. } => val.clone(),
+                        _ => panic!("Invalid name for struct declaration"),
+                    },
+                    _ => panic!("Invalid name for struct declaration"),
+                };
+                let mut found = false;
+                for s in self.struct_.iter_mut() {
+                    if s.name == struct_name {
+                        s.methods = meths;
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    panic!("Struct not found for trait assignment");
+                }
+            }
             Stmt::StructAssign {
                 name, ty: Some(ty), ..
             } => {

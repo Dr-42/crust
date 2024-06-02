@@ -4,6 +4,10 @@ trait Add {
 	fnc sum(const a : Self, const b : Self) : Self;
 }
 
+trait Display {
+	fnc print(self: ptr *Self) : void;
+}
+
 struct Point {
 	x : i32,
 	y : i32,
@@ -20,6 +24,12 @@ impl Add for Point {
 	}
 }
 
+impl Display for Point {
+	fnc print(self: ptr *Self) : void {
+		print("x : %d, y = %d", self.x, self.y);
+	}
+}
+
 fnc main() : i32 {
 	const pta : Point = {
 		x = 20,
@@ -33,6 +43,6 @@ fnc main() : i32 {
 
 	ptc : Point;
 	ptc = pta + ptb;
-	print("x : %d, y = %d", ptc.x, ptc.y);
+	ptc.print();
 	ret 0;
 }
