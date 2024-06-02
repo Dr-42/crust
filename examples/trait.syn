@@ -4,16 +4,20 @@ trait Add {
 	fnc sum(const a : Self, const b : Self) : Self;
 }
 
+trait Length {
+	fnc length(const self : Self) : f32;
+}
+
 trait Display {
-	fnc print(self: ptr *Self) : void;
+	fnc print(self: ptr<*Self>) : void;
 }
 
-struct Point {
-	x : i32,
-	y : i32,
+struct Vec2 {
+	x : f32,
+	y : f32,
 }
 
-impl Add for Point {
+impl Add for Vec2 {
 	fnc sum(const a: Self, const b: Self) : Self {
 		return : Self = {
 			x = a.x + b.x,
@@ -24,25 +28,44 @@ impl Add for Point {
 	}
 }
 
-impl Display for Point {
-	fnc print(self: ptr *Self) : void {
+
+impl Display for Vec2 {
+	fnc print(self: ptr<*Self>) : void {
 		print("x : %d, y = %d", self.x, self.y);
 	}
 }
 
+impl Length for Vec2 {
+	fnc length(self : Self) : f32 {
+		return : f32 = self.x * self.x + self.y * self.y;
+		ret return;
+	}
+}
+
+fnc add_len(a : trait<Length + Display>, b : trait<Length + Display>) : f32 {
+	a.print();
+	b.print();
+	return : f32 = a.length() + b.length();
+	print("Length of a + b = %f", return);
+	ret return;
+}
+
 fnc main() : i32 {
-	const pta : Point = {
-		x = 20,
-		y = 40,
+	const pta : Vec2 = {
+		x = 20.0,
+		y = 40.0,
 	};
 
-	const ptb : Point = {
-		x = 50,
-		y = 60,
+	const ptb : Vec2 = {
+		x = 50.0,
+		y = 60.0,
 	};
 
-	ptc : Point;
+	ptc : Vec2;
+	len : f32 = add_len(pta, ptb);
 	ptc = pta + ptb;
+	print("Sum of a + b = ");
 	ptc.print();
+	print("Sum of a + b length = %f", len);
 	ret 0;
 }

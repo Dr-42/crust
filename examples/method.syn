@@ -6,7 +6,7 @@ struct Point {
 }
 
 impl Point {
-    fnc print(self: ptr *Self) : void {
+    fnc print(self: ptr<*Self>) : void {
         print("x: ", self.x, ", y: ", self.y, "\n");
     }
 }

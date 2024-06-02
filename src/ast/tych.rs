@@ -577,8 +577,62 @@ impl TychContext {
                         return Err(self.create_error("Argument count mismatch", span));
                     }
                     for (arg_ty, fn_arg_ty) in arg_types.iter().zip(fn_data.args.iter()) {
-                        if *arg_ty != *fn_arg_ty.ty {
-                            return Err(self.create_error("Argument type mismatch", span));
+                        match *fn_arg_ty.ty.clone() {
+                            Type::TraitType { traits } => match arg_ty {
+                                Type::UserDefined { name } => {
+                                    let arg_name = match *name.clone() {
+                                        Expr::Iden { val, span } => val,
+                                        _ => {
+                                            return Err(self.create_error(
+                                                "Expected identifier for trait access",
+                                                span,
+                                            ))
+                                        }
+                                    };
+                                    let struct_data =
+                                        self.decl_data.struct_.iter().find(|s| s.name == arg_name);
+                                    let trait_names = traits
+                                        .iter()
+                                        .map(|t| match *t.clone() {
+                                            Expr::Iden { val, span } => Ok(val),
+                                            _ => Err(self.create_error(
+                                                "Expected identifier for trait type parameter",
+                                                span,
+                                            )),
+                                        })
+                                        .collect::<Result<Vec<String>, Diagnostic<usize>>>()?;
+                                    if let Some(struct_data) = struct_data {
+                                        let traits_satisfied = trait_names
+                                            .iter()
+                                            .all(|t| struct_data.traits.iter().any(|st| st == t));
+                                        if !traits_satisfied {
+                                            let unsatisfied_traits = trait_names
+                                                .iter()
+                                                .filter(|t| {
+                                                    !struct_data.traits.iter().any(|st| st == *t)
+                                                })
+                                                .collect::<Vec<&String>>();
+                                            let err_msg = format!(
+                                                "Struct {:?} does not satisfy trait(s): {:?}",
+                                                name, unsatisfied_traits
+                                            );
+                                            return Err(self.create_error(&err_msg, span));
+                                        }
+                                    } else {
+                                        return Err(self.create_error("Struct not found", span));
+                                    }
+                                }
+                                _ => {
+                                    return Err(
+                                        self.create_error("Expected user defined type", span)
+                                    );
+                                }
+                            },
+                            _ => {
+                                if *arg_ty != *fn_arg_ty.ty {
+                                    return Err(self.create_error("Argument type mismatch", span));
+                                }
+                            }
                         }
                     }
                     Ok(fn_data.ret.as_ref().clone())
@@ -603,8 +657,75 @@ impl TychContext {
                                 return Err(self.create_error("Argument count mismatch", span));
                             }
                             for (arg_ty, fn_arg_ty) in arg_types.iter().zip(ptr_args.iter()) {
-                                if *arg_ty != **fn_arg_ty {
-                                    return Err(self.create_error("Argument type mismatch", span));
+                                match *fn_arg_ty.clone() {
+                                    Type::TraitType { traits } => match arg_ty {
+                                        Type::UserDefined { name } => {
+                                            let arg_name = match *name.clone() {
+                                                Expr::Iden { val, span } => val,
+                                                _ => {
+                                                    return Err(self.create_error(
+                                                        "Expected identifier for trait access",
+                                                        span,
+                                                    ))
+                                                }
+                                            };
+                                            let struct_data = self
+                                                .decl_data
+                                                .struct_
+                                                .iter()
+                                                .find(|s| s.name == arg_name);
+                                            let trait_names = traits
+                                                .iter()
+                                                .map(|t| {
+                                                    match *t.clone() {
+                                            Expr::Iden { val, span } => Ok(val),
+                                            _ => Err(self.create_error(
+                                                "Expected identifier for trait type parameter",
+                                                span,
+                                            )),
+                                        }
+                                                })
+                                                .collect::<Result<Vec<String>, Diagnostic<usize>>>(
+                                                )?;
+                                            if let Some(struct_data) = struct_data {
+                                                let traits_satisfied =
+                                                    trait_names.iter().all(|t| {
+                                                        struct_data.traits.iter().any(|st| st == t)
+                                                    });
+                                                if !traits_satisfied {
+                                                    let unsatisfied_traits = trait_names
+                                                        .iter()
+                                                        .filter(|t| {
+                                                            !struct_data
+                                                                .traits
+                                                                .iter()
+                                                                .any(|st| st == *t)
+                                                        })
+                                                        .collect::<Vec<&String>>();
+                                                    let err_msg = format!(
+                                                "Struct {:?} does not satisfy trait(s): {:?}",
+                                                name, unsatisfied_traits
+                                            );
+                                                    return Err(self.create_error(&err_msg, span));
+                                                }
+                                            } else {
+                                                return Err(
+                                                    self.create_error("Struct not found", span)
+                                                );
+                                            }
+                                        }
+                                        _ => {
+                                            return Err(self
+                                                .create_error("Expected user defined type", span));
+                                        }
+                                    },
+                                    _ => {
+                                        if *arg_ty != *fn_arg_ty.clone() {
+                                            return Err(
+                                                self.create_error("Argument type mismatch", span)
+                                            );
+                                        }
+                                    }
                                 }
                             }
                             Ok(*ret)
@@ -680,7 +801,7 @@ impl TychContext {
                     Expr::Iden { val, span } => {
                         if val == "self" {
                             if let Some(struct_data) = self.impl_type.as_ref() {
-                                struct_data
+                                struct_data.clone()
                             } else {
                                 return Err(self.create_error("No struct type found", span));
                             }
@@ -704,16 +825,48 @@ impl TychContext {
                                         .iter()
                                         .find(|s| s.name == struct_name);
                                     if let Some(struct_data) = struct_find {
-                                        struct_data
+                                        struct_data.clone()
                                     } else {
                                         return Err(self.create_error("Struct not found", span));
                                     }
                                 }
                                 Type::Builtin(BuiltinType::Slf) => {
                                     if let Some(struct_data) = self.impl_type.as_ref() {
-                                        struct_data
+                                        struct_data.clone()
                                     } else {
                                         return Err(self.create_error("No struct type found", span));
+                                    }
+                                }
+                                Type::TraitType { traits } => {
+                                    let mut methods = Vec::new();
+                                    let mut trait_names = Vec::new();
+                                    for trait_name in traits {
+                                        let trait_name = match *trait_name {
+                                            Expr::Iden { val, span } => val,
+                                            _ => {
+                                                return Err(self.create_error(
+                                                    "Expected identifier for trait access",
+                                                    span,
+                                                ))
+                                            }
+                                        };
+                                        let trait_data = self
+                                            .decl_data
+                                            .trait_
+                                            .iter()
+                                            .find(|t| t.name == *trait_name);
+                                        if let Some(trait_data) = trait_data {
+                                            methods.extend(trait_data.methods.clone());
+                                            trait_names.push(trait_name);
+                                        } else {
+                                            return Err(self.create_error("Trait not found", span));
+                                        }
+                                    }
+                                    StructDeclData {
+                                        name: "trait".to_string(),
+                                        fields: vec![],
+                                        traits: trait_names,
+                                        methods,
                                     }
                                 }
                                 _ => {
@@ -746,7 +899,7 @@ impl TychContext {
                                     .iter()
                                     .find(|s| s.name == struct_name);
                                 if let Some(struct_data) = struct_find {
-                                    struct_data
+                                    struct_data.clone()
                                 } else {
                                     return Err(self.create_error("Struct not found", span));
                                 }

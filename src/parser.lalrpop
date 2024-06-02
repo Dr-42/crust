@@ -408,6 +408,7 @@ Type: Box<Type> = {
     Pointer => <>,
     FnPtr => <>,
     UserDefined => <>,
+    TraitType => <>,
     Array => <>,
 };
 
@@ -430,7 +431,7 @@ BuilinType: BuiltinType = {
 };
 
 Pointer: Box<Type> = {
-    "ptr" <n:"*"+> <t:Type> => {
+    "ptr" "<" <n:"*"+> <t:Type> ">" => {
         let nr = n.len();
         let mut base = t;
         for _ in 0..nr {
@@ -464,6 +465,12 @@ Array: Box<Type> = {
 UserDefined: Box<Type> = {
     <name:Iden> => Box::new(Type::UserDefined {
         name: name,
+    }),
+};
+
+TraitType: Box<Type> = {
+    "trait" "<" <traits:Plud<Iden>> ">" => Box::new(Type::TraitType {
+        traits: traits,
     }),
 };
 

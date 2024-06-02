@@ -1,8 +1,8 @@
 fnc print(a : str, ...) : void;
-fnc alloc_dyn_arr(size : i32) : ptr* i32;
+fnc alloc_dyn_arr(size : i32) : ptr<*i32>;
 
 fnc main() : i32 {
-    a : ptr* i32 = alloc_dyn_arr(10);
+    a : ptr<*i32> = alloc_dyn_arr(10);
     a[0] = 1;
     a[1] = 2;
     print("a = %p\n", a);

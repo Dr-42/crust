@@ -49,6 +49,9 @@ pub enum Type {
     UserDefined {
         name: Box<Expr>,
     },
+    TraitType {
+        traits: Vec<Box<Expr>>,
+    },
     Array {
         base: Box<Type>,
         lens: Vec<usize>,
@@ -91,6 +94,9 @@ impl PartialEq for Type {
                     lens: r_lens,
                 },
             ) => l_base == r_base && l_lens == r_lens,
+            (Self::TraitType { traits: l_traits }, Self::TraitType { traits: r_traits }) => {
+                l_traits == r_traits
+            }
             _ => false,
         }
     }

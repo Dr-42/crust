@@ -104,6 +104,7 @@ impl<'ctx> CodegenContext<'ctx> {
                 )
             }
             Type::UserDefined { name } => todo!(),
+            Type::TraitType { traits } => todo!(),
             Type::Array { base, lens } => {
                 let mut current_ty = self.get_inkwell_type(base).as_any_type_enum();
                 for len in lens {
