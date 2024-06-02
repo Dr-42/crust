@@ -1,7 +1,6 @@
 use std::error::Error;
 
 use ast::tych::TychContext;
-use codegen::CodegenContext;
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,

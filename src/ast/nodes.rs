@@ -38,18 +38,6 @@ pub enum BuiltinType {
     Slf,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct GenericType {
-    pub name: Box<Expr>,
-    pub constraints: Option<Vec<Box<Type>>>,
-}
-
-impl GenericType {
-    pub fn new(name: Box<Expr>, constraints: Option<Vec<Box<Type>>>) -> Self {
-        Self { name, constraints }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Type {
     Builtin(BuiltinType),
@@ -60,7 +48,6 @@ pub enum Type {
     },
     UserDefined {
         name: Box<Expr>,
-        generic_args: Option<Vec<Box<Type>>>,
     },
     Array {
         base: Box<Type>,
@@ -83,16 +70,7 @@ impl PartialEq for Type {
                     ret: r_ret,
                 },
             ) => l_args == r_args && l_ret == r_ret,
-            (
-                Self::UserDefined {
-                    name: l_name,
-                    generic_args: l_generic_args,
-                },
-                Self::UserDefined {
-                    name: r_name,
-                    generic_args: r_generic_args,
-                },
-            ) => {
+            (Self::UserDefined { name: l_name }, Self::UserDefined { name: r_name }) => {
                 let l_name_val = match l_name.as_ref() {
                     Expr::Iden { val, .. } => val,
                     _ => unreachable!(),
@@ -101,7 +79,7 @@ impl PartialEq for Type {
                     Expr::Iden { val, .. } => val,
                     _ => unreachable!(),
                 };
-                l_name_val == r_name_val && l_generic_args == r_generic_args
+                l_name_val == r_name_val
             }
             (
                 Self::Array {
@@ -209,7 +187,6 @@ pub enum Expr {
     Call {
         name: Box<Expr>,
         args: Vec<Box<Expr>>,
-        generics: Option<Vec<Box<Type>>>,
         span: Span,
     },
     Index {
@@ -277,7 +254,6 @@ pub enum Stmt {
     StructDecl {
         name: Box<Expr>,
         fields: Vec<Box<Stmt>>,
-        generics: Option<Vec<Box<GenericType>>>,
         span: Span,
     },
     ImplDecl {
@@ -298,7 +274,6 @@ pub enum Stmt {
     UnionDecl {
         name: Box<Expr>,
         fields: Vec<Box<Stmt>>,
-        generics: Option<Vec<Box<GenericType>>>,
         span: Span,
     },
     FunctionDecl {
@@ -307,7 +282,6 @@ pub enum Stmt {
         args: Vec<Box<Stmt>>,
         ret: Box<Type>,
         body: Option<Box<Stmt>>,
-        generics: Option<Vec<Box<GenericType>>>,
         isvararg: bool,
         span: Span,
     },

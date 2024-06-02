@@ -160,12 +160,7 @@ impl TychContext {
                 }
                 _ => return Err(self.create_error("Expected identifier", span)),
             },
-            Stmt::StructDecl {
-                name,
-                fields,
-                generics,
-                span,
-            } => match *name {
+            Stmt::StructDecl { name, fields, span } => match *name {
                 Expr::Iden { val, span } => {
                     let struct_name = val;
                     for field in fields {
@@ -234,12 +229,7 @@ impl TychContext {
                     }
                 }
             }
-            Stmt::UnionDecl {
-                name,
-                fields,
-                generics,
-                span,
-            } => {
+            Stmt::UnionDecl { name, fields, span } => {
                 let union_name = match *name {
                     Expr::Iden { val, span } => val,
                     _ => {
@@ -256,7 +246,6 @@ impl TychContext {
                 args,
                 ret,
                 body,
-                generics,
                 isvararg,
                 span,
             } => {
@@ -564,12 +553,7 @@ impl TychContext {
                 let rhs_ty = self.tych_expr(*rhs)?;
                 self.check_compatible_type(lhs_ty, rhs_ty, op, span)
             }
-            Expr::Call {
-                name,
-                args,
-                generics,
-                span,
-            } => {
+            Expr::Call { name, args, span } => {
                 let fn_name = match *name {
                     Expr::Iden { val, span } => val,
                     _ => {
@@ -792,12 +776,7 @@ impl TychContext {
                             Err(self.create_error("Member not found", span))
                         }
                     }
-                    Expr::Call {
-                        name,
-                        args,
-                        generics,
-                        span,
-                    } => {
+                    Expr::Call { name, args, span } => {
                         let fn_name = match *name {
                             Expr::Iden { val, span } => val,
                             _ => {
@@ -907,7 +886,6 @@ impl TychContext {
                                 val: enum_name,
                                 span,
                             }),
-                            generic_args: None,
                         })
                     } else {
                         Err(self.create_error("Variant not found", span))

@@ -103,7 +103,7 @@ impl<'ctx> CodegenContext<'ctx> {
                         .ptr_type(AddressSpace::default()),
                 )
             }
-            Type::UserDefined { name, generic_args } => todo!(),
+            Type::UserDefined { name } => todo!(),
             Type::Array { base, lens } => {
                 let mut current_ty = self.get_inkwell_type(base).as_any_type_enum();
                 for len in lens {
@@ -139,113 +139,7 @@ impl<'ctx> CodegenContext<'ctx> {
 
     pub fn codegen_program(&self, program: Program) -> Result<(), Diagnostic<usize>> {
         for statement in program.stmts {
-            match *statement {
-                crate::ast::nodes::Stmt::Expr(expr) => {
-                    let _ = self.codegen_expr(*expr);
-                }
-                crate::ast::nodes::Stmt::TypeAlias { name, ty, span } => todo!(),
-                crate::ast::nodes::Stmt::If {
-                    cond,
-                    body,
-                    els,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::While { cond, body, span } => todo!(),
-                crate::ast::nodes::Stmt::For {
-                    init,
-                    cond,
-                    step,
-                    body,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::Return { expr, span } => todo!(),
-                crate::ast::nodes::Stmt::Block { stmts, decl_data } => todo!(),
-                crate::ast::nodes::Stmt::VarDecl {
-                    name,
-                    qualifiers,
-                    ty,
-                    value,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::StructDecl {
-                    name,
-                    fields,
-                    generics,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::ImplDecl {
-                    name,
-                    methods,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::TraitDecl {
-                    name,
-                    methods,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::EnumDecl {
-                    name,
-                    variants,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::UnionDecl {
-                    name,
-                    fields,
-                    generics,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::FunctionDecl {
-                    name,
-                    qualifiers,
-                    args,
-                    ret,
-                    body,
-                    generics,
-                    isvararg,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::VarAssign {
-                    name,
-                    value,
-                    op,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::DerefAssign {
-                    value,
-                    expr,
-                    op,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::StructAssign {
-                    name,
-                    qualifiers,
-                    ty,
-                    fields,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::StructMemberAssign {
-                    name,
-                    value,
-                    op,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::ArrayMemberAssign {
-                    element,
-                    value,
-                    op,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::TraitAssign {
-                    name,
-                    for_ty,
-                    methods,
-                    span,
-                } => todo!(),
-                crate::ast::nodes::Stmt::Match { expr, cases, span } => todo!(),
-                crate::ast::nodes::Stmt::Break(_) => todo!(),
-                crate::ast::nodes::Stmt::Continue(_) => todo!(),
-                crate::ast::nodes::Stmt::Comment(_) => todo!(),
-            }
+            todo!()
         }
         Ok(())
     }

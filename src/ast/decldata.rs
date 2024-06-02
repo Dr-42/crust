@@ -1,4 +1,4 @@
-use super::nodes::{Expr, GenericType, Stmt, Type};
+use super::nodes::{Expr, Stmt, Type};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct VarDeclData {
@@ -11,7 +11,7 @@ pub struct StructDeclData {
     pub name: String,
     pub fields: Vec<VarDeclData>,
     pub methods: Vec<FunctionDeclData>,
-    pub generics: Option<Vec<GenericType>>,
+    pub traits: Vec<String>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -19,7 +19,6 @@ pub struct FunctionDeclData {
     pub name: String,
     pub args: Vec<VarDeclData>,
     pub ret: Box<Type>,
-    pub generics: Option<Vec<GenericType>>,
     pub variadic: bool,
 }
 
@@ -33,14 +32,12 @@ pub struct EnumDeclData {
 pub struct UnionDeclData {
     pub name: String,
     pub fields: Vec<VarDeclData>,
-    pub generics: Option<Vec<GenericType>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TraitDeclData {
     pub name: String,
     pub methods: Vec<FunctionDeclData>,
-    pub generics: Option<Vec<GenericType>>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -101,12 +98,7 @@ impl DeclData {
                     ty: ty.clone(),
                 });
             }
-            Stmt::StructDecl {
-                name,
-                fields,
-                generics,
-                ..
-            } => {
+            Stmt::StructDecl { name, fields, .. } => {
                 let nm = match *name {
                     Expr::Iden { val, .. } => val.clone(),
                     _ => panic!("Invalid name for struct declaration"),
@@ -129,21 +121,11 @@ impl DeclData {
                         }
                     };
                 }
-                let generics = match generics {
-                    Some(ref g) => {
-                        let mut res = Vec::new();
-                        for gen in g.iter() {
-                            res.push(*gen.clone());
-                        }
-                        Some(res)
-                    }
-                    None => None,
-                };
                 self.struct_.push(StructDeclData {
                     name: nm,
                     fields: flds,
                     methods: Vec::new(),
-                    generics,
+                    traits: Vec::new(),
                 });
             }
             Stmt::ImplDecl { name, methods, .. } => {
@@ -158,7 +140,6 @@ impl DeclData {
                             name,
                             args,
                             ret,
-                            generics,
                             isvararg,
                             ..
                         } => {
@@ -184,21 +165,10 @@ impl DeclData {
                                     }
                                 };
                             }
-                            let generics = match generics {
-                                Some(ref g) => {
-                                    let mut res = Vec::new();
-                                    for gen in g.iter() {
-                                        res.push(*gen.clone());
-                                    }
-                                    Some(res)
-                                }
-                                None => None,
-                            };
                             meths.push(FunctionDeclData {
                                 name: nm,
                                 args: arg,
                                 ret: ret.clone(),
-                                generics,
                                 variadic: isvararg,
                             });
                         }
@@ -225,7 +195,7 @@ impl DeclData {
                 methods,
                 ..
             } => {
-                let nm = match *name {
+                let trait_nm = match *name {
                     Expr::Iden { val, .. } => val.clone(),
                     _ => panic!("Invalid name for struct declaration"),
                 };
@@ -236,7 +206,6 @@ impl DeclData {
                             name,
                             args,
                             ret,
-                            generics,
                             isvararg,
                             ..
                         } => {
@@ -262,21 +231,10 @@ impl DeclData {
                                     }
                                 };
                             }
-                            let generics = match generics {
-                                Some(ref g) => {
-                                    let mut res = Vec::new();
-                                    for gen in g.iter() {
-                                        res.push(*gen.clone());
-                                    }
-                                    Some(res)
-                                }
-                                None => None,
-                            };
                             meths.push(FunctionDeclData {
                                 name: nm,
                                 args: arg,
                                 ret: ret.clone(),
-                                generics,
                                 variadic: isvararg,
                             });
                         }
@@ -295,7 +253,8 @@ impl DeclData {
                 let mut found = false;
                 for s in self.struct_.iter_mut() {
                     if s.name == struct_name {
-                        s.methods = meths;
+                        s.methods.extend(meths);
+                        s.traits.push(trait_nm);
                         found = true;
                         break;
                     }
@@ -320,7 +279,6 @@ impl DeclData {
                 name,
                 args,
                 ret,
-                generics,
                 isvararg,
                 ..
             } => {
@@ -346,21 +304,10 @@ impl DeclData {
                         }
                     };
                 }
-                let generics = match generics {
-                    Some(ref g) => {
-                        let mut res = Vec::new();
-                        for gen in g.iter() {
-                            res.push(*gen.clone());
-                        }
-                        Some(res)
-                    }
-                    None => None,
-                };
                 self.function.push(FunctionDeclData {
                     name: nm,
                     args: arg,
                     ret: ret.clone(),
-                    generics,
                     variadic: isvararg,
                 });
             }
@@ -385,12 +332,7 @@ impl DeclData {
                     variants: vars,
                 });
             }
-            Stmt::UnionDecl {
-                name,
-                fields,
-                generics,
-                ..
-            } => {
+            Stmt::UnionDecl { name, fields, .. } => {
                 let nm = match *name {
                     Expr::Iden { val, .. } => val.clone(),
                     _ => panic!("Invalid name for struct declaration"),
@@ -413,20 +355,9 @@ impl DeclData {
                         }
                     };
                 }
-                let generics = match generics {
-                    Some(ref g) => {
-                        let mut res = Vec::new();
-                        for gen in g.iter() {
-                            res.push(*gen.clone());
-                        }
-                        Some(res)
-                    }
-                    None => None,
-                };
                 self.union.push(UnionDeclData {
                     name: nm,
                     fields: flds,
-                    generics,
                 });
             }
             Stmt::TraitDecl { name, methods, .. } => {
@@ -441,7 +372,6 @@ impl DeclData {
                             name,
                             args,
                             ret,
-                            generics,
                             isvararg,
                             ..
                         } => {
@@ -467,21 +397,10 @@ impl DeclData {
                                     }
                                 };
                             }
-                            let generics = match generics {
-                                Some(ref g) => {
-                                    let mut res = Vec::new();
-                                    for gen in g.iter() {
-                                        res.push(*gen.clone());
-                                    }
-                                    Some(res)
-                                }
-                                None => None,
-                            };
                             meths.push(FunctionDeclData {
                                 name: nm,
                                 args: arg,
                                 ret: ret.clone(),
-                                generics,
                                 variadic: isvararg,
                             });
                         }
@@ -493,7 +412,6 @@ impl DeclData {
                 self.trait_.push(TraitDeclData {
                     name: nm,
                     methods: meths,
-                    generics: None,
                 });
             }
             Stmt::TypeAlias { name, ty, .. } => {

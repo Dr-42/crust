@@ -372,13 +372,6 @@ Call: Box<Expr> = {
     <ls:@L> <name:Iden> "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
         name: name,
         args: args,
-        generics: None,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> <name:Iden> "::<" <gens:Comma<Type>> ">" "(" <args:Comma<Expr>> ")" <rs:@R> => Box::new(Expr::Call {
-        name: name,
-        args: args,
-        generics: Some(gens),
         span: Span::new(ls as u32, rs as u32),
     }),
 };
@@ -469,13 +462,8 @@ Array: Box<Type> = {
 };
 
 UserDefined: Box<Type> = {
-    <name:Iden> "<" <args:Comma<Type>> ">" => Box::new(Type::UserDefined {
-        name: name,
-        generic_args: Some(args),
-    }),
     <name:Iden> => Box::new(Type::UserDefined {
         name: name,
-        generic_args: None,
     }),
 };
 
@@ -617,26 +605,10 @@ Break: Box<Stmt> = {
     <l:@L> "brk" ";" <r:@R> => Box::new(Stmt::Break(Span::new(l as u32, r as u32))),
 };
 
-GenericType: Box<GenericType> = {
-    <name:Iden> => Box::new(GenericType::new(name, None)),
-    <name:Iden> ":" <t:Plud<Type>> => Box::new(GenericType::new(name, Some(t))),
-};
-
-GenricDecl: Vec<Box<GenericType>> = {
-    <Comma<GenericType>> => <>
-};
-
 StructDecl: Box<Stmt> = {
     <ls:@L> "struct" <name:Iden> "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::StructDecl {
         name: name,
         fields: fields,
-        generics: None,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> "struct" <name:Iden> "<" <gens:GenricDecl> ">" "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::StructDecl {
-        name: name,
-        fields: fields,
-        generics: Some(gens),
         span: Span::new(ls as u32, rs as u32),
     }),
 };
@@ -653,13 +625,6 @@ UnionDecl: Box<Stmt> = {
     <ls:@L> "union" <name:Iden> "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::UnionDecl {
         name: name,
         fields: fields,
-        generics: None,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> "union" <name:Iden> "<" <gens:GenricDecl> ">" "{" <fields:Comma<VarDecl>> "}" <rs:@R> => Box::new(Stmt::UnionDecl {
-        name: name,
-        fields: fields,
-        generics: Some(gens),
         span: Span::new(ls as u32, rs as u32),
     }),
 };
@@ -675,81 +640,37 @@ EnumDecl: Box<Stmt> = {
 FunctionDecl: Box<Stmt> = {
     <ls:@L> <quals:Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
         name: name,
-	qualifiers: quals,
+        qualifiers: quals,
         args: args,
         ret: ret,
         body: Some(body),
-        generics: None,
         isvararg: false,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
-        name: name,
-	qualifiers: quals,
-        args: args,
-        ret: ret,
-        body: Some(body),
-        generics: Some(gens),
-        isvararg: false,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
-        name: name,
-	qualifiers: quals,
-        args: args,
-        ret: ret,
-        body: Some(body),
-        generics: Some(gens),
-        isvararg: true,
         span: Span::new(ls as u32, rs as u32),
     }),
     <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> <body:Block> <rs:@R> => Box::new(Stmt::FunctionDecl {
         name: name,
-	qualifiers: quals,
+        qualifiers: quals,
         args: args,
         ret: ret,
         body: Some(body),
-        generics: None,
         isvararg: true,
         span: Span::new(ls as u32, rs as u32),
     }),
     <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
         name: name,
-	qualifiers: quals,
+        qualifiers: quals,
         args: args,
         ret: ret,
         body: None,
-        generics: None,
-        isvararg: false,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
-        name: name,
-	qualifiers: quals,
-        args: args,
-        ret: ret,
-        body: None,
-        generics: Some(gens),
         isvararg: false,
         span: Span::new(ls as u32, rs as u32),
     }),
     <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
         name: name,
-	qualifiers: quals,
+        qualifiers: quals,
         args: args,
         ret: ret,
         body: None,
-        generics: None,
-        isvararg: true,
-        span: Span::new(ls as u32, rs as u32),
-    }),
-    <ls:@L> <quals: Qualifiers?> "fnc" <name:Iden> "<" <gens:GenricDecl> ">" "(" <args:Comma<VarDecl>> "..." ")" ":" <ret:Type> ";" <rs:@R> => Box::new(Stmt::FunctionDecl {
-        name: name,
-	qualifiers: quals,
-        args: args,
-        ret: ret,
-        body: None,
-        generics: Some(gens),
         isvararg: true,
         span: Span::new(ls as u32, rs as u32),
     }),
