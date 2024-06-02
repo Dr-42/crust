@@ -797,7 +797,60 @@ impl TychContext {
                         args,
                         generics,
                         span,
-                    } => Err(self.create_error("Method calls not implemented", span)),
+                    } => {
+                        let fn_name = match *name {
+                            Expr::Iden { val, span } => val,
+                            _ => {
+                                return Err(self.create_error(
+                                    "Expected identifier for member function call",
+                                    span,
+                                ))
+                            }
+                        };
+                        if let Some(mut fn_data) =
+                            struct_data.methods.iter().find(|m| m.name == fn_name)
+                        {
+                            let mut fn_data = fn_data.clone();
+                            let box_built_in = Box::new(Type::Builtin(BuiltinType::Slf));
+                            let ptr_built_in = Type::Pointer(box_built_in);
+                            if let Some(first_arg) = fn_data.args.first() {
+                                if matches!(&first_arg.ty, ptr_built_in) {
+                                    fn_data.args.remove(0);
+                                } else {
+                                    return Err(
+                                        self.create_error("Expected self as first argument", span)
+                                    );
+                                }
+                            } else {
+                                return Err(
+                                    self.create_error("Expected self as first argument", span)
+                                );
+                            }
+                            let mut arg_types = vec![];
+                            for arg in args {
+                                let arg_ty = self.tych_expr(*arg)?;
+                                arg_types.push(arg_ty);
+                            }
+                            if fn_data.variadic {
+                                if fn_data.args.len() > arg_types.len() {
+                                    return Err(self.create_error(
+                                        "Argument count mismatch in variadic function",
+                                        span,
+                                    ));
+                                }
+                            } else if fn_data.args.len() != arg_types.len() {
+                                return Err(self.create_error("Argument count mismatch", span));
+                            }
+                            for (arg_ty, fn_arg_ty) in arg_types.iter().zip(fn_data.args.iter()) {
+                                if *arg_ty != *fn_arg_ty.ty {
+                                    return Err(self.create_error("Argument type mismatch", span));
+                                }
+                            }
+                            Ok(fn_data.ret.as_ref().clone())
+                        } else {
+                            Err(self.create_error("Function not found", span))
+                        }
+                    }
                     _ => Err(self.create_error("Expected identifier for member access", span)),
                 }
             }

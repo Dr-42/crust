@@ -10,6 +10,7 @@ pub struct VarDeclData {
 pub struct StructDeclData {
     pub name: String,
     pub fields: Vec<VarDeclData>,
+    pub methods: Vec<FunctionDeclData>,
     pub generics: Option<Vec<GenericType>>,
 }
 
@@ -141,8 +142,82 @@ impl DeclData {
                 self.struct_.push(StructDeclData {
                     name: nm,
                     fields: flds,
+                    methods: Vec::new(),
                     generics,
                 });
+            }
+            Stmt::ImplDecl { name, methods, .. } => {
+                let nm = match *name {
+                    Expr::Iden { val, .. } => val.clone(),
+                    _ => panic!("Invalid name for struct declaration"),
+                };
+                let mut meths = Vec::new();
+                for m in methods.iter() {
+                    match *m.clone() {
+                        Stmt::FunctionDecl {
+                            name,
+                            args,
+                            ret,
+                            generics,
+                            isvararg,
+                            ..
+                        } => {
+                            let nm = match *name {
+                                Expr::Iden { val, .. } => val.clone(),
+                                _ => panic!("Invalid name for function declaration"),
+                            };
+                            let mut arg = Vec::new();
+                            for a in args.iter() {
+                                match *a.clone() {
+                                    Stmt::VarDecl { name, ty, .. } => {
+                                        let nm = match *name {
+                                            Expr::Iden { val, .. } => val.clone(),
+                                            _ => panic!("Invalid name for function argument"),
+                                        };
+                                        arg.push(VarDeclData {
+                                            name: nm,
+                                            ty: ty.clone(),
+                                        });
+                                    }
+                                    _ => {
+                                        panic!("Invalid argument in function declaration");
+                                    }
+                                };
+                            }
+                            let generics = match generics {
+                                Some(ref g) => {
+                                    let mut res = Vec::new();
+                                    for gen in g.iter() {
+                                        res.push(*gen.clone());
+                                    }
+                                    Some(res)
+                                }
+                                None => None,
+                            };
+                            meths.push(FunctionDeclData {
+                                name: nm,
+                                args: arg,
+                                ret: ret.clone(),
+                                generics,
+                                variadic: isvararg,
+                            });
+                        }
+                        _ => {
+                            panic!("Invalid method in struct declaration");
+                        }
+                    };
+                }
+                let mut found = false;
+                for s in self.struct_.iter_mut() {
+                    if s.name == nm {
+                        s.methods = meths;
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    panic!("Struct not found for impl declaration");
+                }
             }
             Stmt::StructAssign {
                 name, ty: Some(ty), ..
