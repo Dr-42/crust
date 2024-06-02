@@ -1177,6 +1177,12 @@ impl TychContext {
         if matches!(ty1, Type::UserDefined { .. }) && matches!(ty2, Type::UserDefined { .. }) {
             // TODO: Quick hack for passing this. Need to parse traits and impls
             return Ok(ty1);
+        } else if matches!(ty1, Type::TraitType { .. }) && matches!(ty2, Type::TraitType { .. }) {
+            if ty1 == ty2 {
+                return Ok(ty1);
+            } else {
+                return Err(self.create_error("Trait type mismatch", span));
+            }
         }
         match bin_op {
             BinaryOp::Mul | BinaryOp::Div | BinaryOp::Add | BinaryOp::Sub => {

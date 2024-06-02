@@ -49,6 +49,12 @@ fnc add_len(a : trait<Length + Display>, b : trait<Length + Display>) : f32 {
 	ret return;
 }
 
+fnc add_stuff(a : trait<Add + Display>, b : trait<Add + Display>) : trait<Display + Add> {
+	a.print();
+	b.print();
+	ret a + b;
+}
+
 fnc main() : i32 {
 	const pta : Vec2 = {
 		x = 20.0,

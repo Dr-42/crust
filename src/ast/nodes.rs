@@ -95,7 +95,42 @@ impl PartialEq for Type {
                 },
             ) => l_base == r_base && l_lens == r_lens,
             (Self::TraitType { traits: l_traits }, Self::TraitType { traits: r_traits }) => {
-                l_traits == r_traits
+                // Ignore span
+                let mut l_traits = l_traits.clone();
+                let mut r_traits = r_traits.clone();
+                l_traits.sort_by(|a, b| {
+                    let a_val = match a.as_ref() {
+                        Expr::Iden { val, .. } => val,
+                        _ => unreachable!(),
+                    };
+                    let b_val = match b.as_ref() {
+                        Expr::Iden { val, .. } => val,
+                        _ => unreachable!(),
+                    };
+                    a_val.cmp(b_val)
+                });
+                r_traits.sort_by(|a, b| {
+                    let a_val = match a.as_ref() {
+                        Expr::Iden { val, .. } => val,
+                        _ => unreachable!(),
+                    };
+                    let b_val = match b.as_ref() {
+                        Expr::Iden { val, .. } => val,
+                        _ => unreachable!(),
+                    };
+                    a_val.cmp(b_val)
+                });
+                l_traits.iter().zip(r_traits.iter()).all(|(l, r)| {
+                    let l_val = match l.as_ref() {
+                        Expr::Iden { val, .. } => val,
+                        _ => unreachable!(),
+                    };
+                    let r_val = match r.as_ref() {
+                        Expr::Iden { val, .. } => val,
+                        _ => unreachable!(),
+                    };
+                    l_val == r_val
+                })
             }
             _ => false,
         }
